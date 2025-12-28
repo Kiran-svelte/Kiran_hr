@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - AI Leave Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: #f3f4f6;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7e22ce 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+        
+        .card h2 {
+            font-size: 20px;
+            color: #1f2937;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .integration-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            background: #f9fafb;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .integration-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .integration-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        .google-icon {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .integration-details h3 {
+            font-size: 16px;
+            color: #1f2937;
+        }
+        
+        .integration-details p {
+            font-size: 13px;
+            color: #6b7280;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-connect {
+            background: #4f46e5;
+            color: white;
+        }
+        
+        .btn-connect:hover {
+            background: #4338ca;
+        }
+        
+        .btn-disconnect {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .btn-disconnect:hover {
+            background: #dc2626;
+        }
+        
+        .btn-test {
+            background: #10b981;
+            color: white;
+            margin-left: 10px;
+        }
+        
+        .btn-test:hover {
+            background: #059669;
+        }
+        
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-connected {
+            background: #d1fae5;
+            color: #059669;
+        }
+        
+        .status-disconnected {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .alert-success {
+            background: #d1fae5;
+            color: #059669;
+            border: 1px solid #10b981;
+        }
+        
+        .alert-error {
+            background: #fee2e2;
+            color: #dc2626;
+            border: 1px solid #ef4444;
+        }
+        
+        .permissions-list {
+            margin-top: 15px;
+            padding: 15px;
+            background: #eff6ff;
+            border-radius: 8px;
+        }
+        
+        .permissions-list h4 {
+            color: #1e40af;
+            margin-bottom: 10px;
+        }
+        
+        .permissions-list ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .permissions-list li {
+            padding: 5px 0;
+            color: #1e40af;
+            font-size: 14px;
+        }
+        
+        .permissions-list li::before {
+            content: '✓ ';
+            color: #10b981;
+        }
+        
+        .test-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f9fafb;
+            border-radius: 8px;
+        }
+        
+        .test-section h4 {
+            margin-bottom: 10px;
+        }
+        
+        .test-result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 13px;
+        }
+        
+        .back-link {
+            display: inline-block;
+            color: white;
+            text-decoration: none;
+            margin-top: 10px;
+            opacity: 0.9;
+        }
+        
+        .back-link:hover {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚙️ Settings</h1>
+            <p>Manage your integrations and preferences</p>
+            <a href="/pages/employee/leave-request" class="back-link">← Back to Leave Request</a>
+        </div>
+        
+        <!-- Alerts -->
+        <div id="alertContainer"></div>
+        
+        <div class="card">
+            <h2>🔗 Integrations</h2>
+            
+            <!-- Google Integration -->
+            <div class="integration-item">
+                <div class="integration-info">
+                    <div class="integration-icon google-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24">
+                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                        </svg>
+                    </div>
+                    <div class="integration-details">
+                        <h3>Google Workspace</h3>
+                        <p id="googleStatus">Checking connection...</p>
+                        <span id="googleEmail" style="font-size: 12px; color: #4f46e5;"></span>
+                    </div>
+                </div>
+                <div>
+                    <span id="googleBadge" class="status-badge status-disconnected">Not Connected</span>
+                    <button id="googleConnectBtn" class="btn btn-connect" onclick="connectGoogle()">Connect</button>
+                    <button id="googleTestBtn" class="btn btn-test" style="display:none;" onclick="testGoogle()">Test</button>
+                </div>
+            </div>
+            
+            <div class="permissions-list">
+                <h4>Permissions Requested:</h4>
+                <ul>
+                    <li>Send emails on your behalf (Leave notifications)</li>
+                    <li>Read and modify emails (Track responses)</li>
+                    <li>Access your calendar (Block leave dates)</li>
+                    <li>View your email address (Identification)</li>
+                </ul>
+            </div>
+            
+            <!-- Test Section -->
+            <div id="testSection" class="test-section" style="display:none;">
+                <h4>🧪 Test Integration</h4>
+                <button class="btn btn-test" onclick="sendTestEmail()">Send Test Email</button>
+                <button class="btn btn-test" onclick="createTestEvent()">Create Test Calendar Event</button>
+                <div id="testResult" class="test-result" style="display:none;"></div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>👤 Account Settings</h2>
+            <div style="display: grid; gap: 15px;">
+                <div>
+                    <label style="font-weight: 600; color: #374151;">Employee ID</label>
+                    <input type="text" id="empId" value="EMP001" 
+                           style="width: 100%; padding: 10px; border: 1px solid #e5e7eb; border-radius: 8px; margin-top: 5px;">
+                </div>
+                <div>
+                    <label style="font-weight: 600; color: #374151;">Notification Email</label>
+                    <input type="email" id="notifyEmail" placeholder="your@email.com" 
+                           style="width: 100%; padding: 10px; border: 1px solid #e5e7eb; border-radius: 8px; margin-top: 5px;">
+                </div>
+                <button class="btn btn-connect" onclick="saveSettings()">Save Settings</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+        
+        // Check for URL params (OAuth callback)
+        window.onload = function() {
+            const params = new URLSearchParams(window.location.search);
+            
+            if (params.get('google_connected') === 'true') {
+                showAlert('success', `✅ Google connected successfully! Email: ${params.get('email')}`);
+                // Clean URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+            
+            if (params.get('error')) {
+                showAlert('error', `❌ Connection error: ${params.get('error')}`);
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+            
+            // Check Google status
+            checkGoogleStatus();
+        };
+        
+        function getEmpId() {
+            return document.getElementById('empId').value || 'EMP001';
+        }
+        
+        async function checkGoogleStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/google/status?emp_id=${getEmpId()}`);
+                const data = await response.json();
+                
+                const statusEl = document.getElementById('googleStatus');
+                const badgeEl = document.getElementById('googleBadge');
+                const btnEl = document.getElementById('googleConnectBtn');
+                const testBtnEl = document.getElementById('googleTestBtn');
+                const emailEl = document.getElementById('googleEmail');
+                const testSection = document.getElementById('testSection');
+                
+                if (data.connected) {
+                    statusEl.textContent = 'Connected and ready';
+                    badgeEl.textContent = 'Connected';
+                    badgeEl.className = 'status-badge status-connected';
+                    btnEl.textContent = 'Disconnect';
+                    btnEl.className = 'btn btn-disconnect';
+                    btnEl.onclick = disconnectGoogle;
+                    testBtnEl.style.display = 'inline-block';
+                    emailEl.textContent = data.email || '';
+                    testSection.style.display = 'block';
+                    
+                    if (data.canSendEmail) {
+                        emailEl.textContent += ' ✓ Can send emails';
+                    }
+                } else {
+                    statusEl.textContent = 'Not connected';
+                    badgeEl.textContent = 'Not Connected';
+                    badgeEl.className = 'status-badge status-disconnected';
+                    btnEl.textContent = 'Connect';
+                    btnEl.className = 'btn btn-connect';
+                    btnEl.onclick = connectGoogle;
+                    testBtnEl.style.display = 'none';
+                    testSection.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Status check error:', error);
+            }
+        }
+        
+        async function connectGoogle() {
+            const empId = getEmpId();
+            window.location.href = `${API_BASE}/auth/google?emp_id=${empId}`;
+        }
+        
+        async function disconnectGoogle() {
+            if (!confirm('Disconnect Google account? You won\'t receive email notifications or calendar events.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/google/disconnect`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ emp_id: getEmpId() })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showAlert('success', 'Google account disconnected');
+                    checkGoogleStatus();
+                } else {
+                    showAlert('error', data.error);
+                }
+            } catch (error) {
+                showAlert('error', error.message);
+            }
+        }
+        
+        async function sendTestEmail() {
+            const resultEl = document.getElementById('testResult');
+            resultEl.style.display = 'block';
+            resultEl.textContent = 'Sending test email...';
+            resultEl.style.background = '#eff6ff';
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/google/test-email`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        emp_id: getEmpId(),
+                        to_email: document.getElementById('notifyEmail').value || 'kirancompany094@gmail.com'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultEl.textContent = `✅ Email sent! Message ID: ${data.messageId}`;
+                    resultEl.style.background = '#d1fae5';
+                } else {
+                    resultEl.textContent = `❌ Failed: ${data.error}`;
+                    resultEl.style.background = '#fee2e2';
+                }
+            } catch (error) {
+                resultEl.textContent = `❌ Error: ${error.message}`;
+                resultEl.style.background = '#fee2e2';
+            }
+        }
+        
+        async function createTestEvent() {
+            const resultEl = document.getElementById('testResult');
+            resultEl.style.display = 'block';
+            resultEl.textContent = 'Creating test calendar event...';
+            resultEl.style.background = '#eff6ff';
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/google/test-calendar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ emp_id: getEmpId() })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultEl.innerHTML = `✅ Calendar event created!<br><a href="${data.eventLink}" target="_blank">View Event</a>`;
+                    resultEl.style.background = '#d1fae5';
+                } else {
+                    resultEl.textContent = `❌ Failed: ${data.error}`;
+                    resultEl.style.background = '#fee2e2';
+                }
+            } catch (error) {
+                resultEl.textContent = `❌ Error: ${error.message}`;
+                resultEl.style.background = '#fee2e2';
+            }
+        }
+        
+        function saveSettings() {
+            localStorage.setItem('empId', document.getElementById('empId').value);
+            localStorage.setItem('notifyEmail', document.getElementById('notifyEmail').value);
+            showAlert('success', 'Settings saved!');
+            checkGoogleStatus();
+        }
+        
+        function showAlert(type, message) {
+            const container = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            container.innerHTML = '';
+            container.appendChild(alert);
+            
+            setTimeout(() => alert.remove(), 5000);
+        }
+        
+        // Load saved settings
+        if (localStorage.getItem('empId')) {
+            document.getElementById('empId').value = localStorage.getItem('empId');
+        }
+        if (localStorage.getItem('notifyEmail')) {
+            document.getElementById('notifyEmail').value = localStorage.getItem('notifyEmail');
+        }
+    </script>
+</body>
+</html>

@@ -31,7 +31,10 @@ const API = {
     },
 
     get(endpoint) { return this.request(endpoint, 'GET'); },
-    post(endpoint, body) { return this.request(endpoint, 'POST', body); }
+    post(endpoint, body) { return this.request(endpoint, 'POST', body); },
+    put(endpoint, body) { return this.request(endpoint, 'PUT', body); },
+    delete(endpoint) { return this.request(endpoint, 'DELETE'); },
+    patch(endpoint, body) { return this.request(endpoint, 'PATCH', body); }
 };
 
 // UI Helpers

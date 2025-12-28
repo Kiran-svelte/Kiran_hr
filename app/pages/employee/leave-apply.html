@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apply for Leave</title>
+    <script src="https://js.pusher.com/8.4.0/pusher.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 800px;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            padding: 40px 20px 30px;
+        }
+        
+        .header h1 {
+            font-size: 1.75rem;
+            margin-bottom: 8px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+            border: none;
+        }
+        
+        .card-header {
+            background: none;
+            border-bottom: 1px solid #E5E7EB;
+            padding: 16px 20px;
+            font-weight: 600;
+        }
+        
+        .card-body {
+            padding: 20px;
+        }
+        
+        .balance-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+        
+        @media (max-width: 576px) {
+            .balance-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        .balance-item {
+            text-align: center;
+            padding: 16px;
+            background: #F9FAFB;
+            border-radius: 12px;
+        }
+        
+        .balance-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .balance-label {
+            font-size: 0.75rem;
+            color: #6B7280;
+        }
+        
+        .form-label {
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
+        
+        .form-control, .form-select {
+            border-radius: 8px;
+            padding: 12px 16px;
+            border: 1px solid #E5E7EB;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            border: none;
+            padding: 14px 28px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        
+        .btn-primary:hover {
+            background: #4338CA;
+        }
+        
+        .approval-chain {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+        
+        .approver-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #EEF2FF;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.875rem;
+        }
+        
+        .approver-badge .level {
+            background: var(--primary);
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+        }
+        
+        .arrow {
+            color: #9CA3AF;
+        }
+        
+        .history-item {
+            padding: 12px;
+            border-bottom: 1px solid #E5E7EB;
+        }
+        
+        .history-item:last-child {
+            border-bottom: none;
+        }
+        
+        .status-approved { background: #D1FAE5; color: #065F46; }
+        .status-rejected { background: #FEE2E2; color: #991B1B; }
+        .status-pending { background: #FEF3C7; color: #92400E; }
+        
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+        }
+        
+        .custom-toast {
+            background: var(--primary);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 10px;
+            animation: slideUp 0.3s ease;
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .employee-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: #F9FAFB;
+            border-radius: 10px;
+            margin-bottom: 16px;
+        }
+        
+        .employee-avatar {
+            width: 48px;
+            height: 48px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+        
+        .days-preview {
+            background: #EEF2FF;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-top: 12px;
+            display: none;
+        }
+        
+        .days-preview.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="bi bi-calendar-check"></i> Apply for Leave</h1>
+            <p>Submit your leave request</p>
+        </div>
+        
+        <!-- Employee Info -->
+        <div class="card">
+            <div class="card-body">
+                <div class="employee-info">
+                    <div class="employee-avatar" id="employeeAvatar">RK</div>
+                    <div>
+                        <strong id="employeeName">Loading...</strong>
+                        <div class="text-muted small" id="employeeDetails">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Leave Balance -->
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-wallet2"></i> Leave Balance
+            </div>
+            <div class="card-body">
+                <div class="balance-grid" id="balanceGrid">
+                    <div class="balance-item">
+                        <div class="balance-value">-</div>
+                        <div class="balance-label">Earned Leave</div>
+                    </div>
+                    <div class="balance-item">
+                        <div class="balance-value">-</div>
+                        <div class="balance-label">Sick Leave</div>
+                    </div>
+                    <div class="balance-item">
+                        <div class="balance-value">-</div>
+                        <div class="balance-label">Casual Leave</div>
+                    </div>
+                    <div class="balance-item">
+                        <div class="balance-value">-</div>
+                        <div class="balance-label">Comp Off</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Leave Application Form -->
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-pencil-square"></i> New Leave Request
+            </div>
+            <div class="card-body">
+                <form id="leaveForm" onsubmit="submitLeave(event)">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Leave Type</label>
+                            <select class="form-select" id="leaveType" required onchange="updateApprovalChain()">
+                                <option value="">Select type...</option>
+                                <option value="casual_leave">Casual Leave</option>
+                                <option value="sick_leave">Sick Leave</option>
+                                <option value="earned_leave">Earned Leave</option>
+                                <option value="comp_off">Comp Off</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="startDate" required onchange="calculateDays()">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="endDate" required onchange="calculateDays()">
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="isHalfDay" onchange="calculateDays()">
+                                <label class="form-check-label">Half Day</label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="days-preview" id="daysPreview">
+                                <strong><span id="totalDays">0</span> days</strong> requested
+                            </div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label">Reason</label>
+                            <textarea class="form-control" id="reason" rows="3" placeholder="Brief reason for leave..." required></textarea>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label">Approval Chain</label>
+                            <div class="approval-chain" id="approvalChain">
+                                <span class="text-muted">Select dates to see approval chain</span>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-primary w-100" id="submitBtn">
+                                <i class="bi bi-send"></i> Submit Request
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Recent Requests -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-clock-history"></i> Recent Requests</span>
+                <button class="btn btn-sm btn-outline-primary" onclick="loadHistory()">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+            </div>
+            <div class="card-body p-0" id="historyList">
+                <div class="text-center py-4 text-muted">Loading...</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Configuration
+        const API_BASE = 'http://localhost:5000/api/leave';
+        const EMPLOYEE_ID = localStorage.getItem('employeeId') || 'EMP014'; // Default employee
+        
+        let employeeData = null;
+        let leaveBalance = null;
+        
+        // Pusher Setup
+        const pusher = new Pusher('b6c8ed8a35f95339f71c', { cluster: 'ap2' });
+        const userChannel = pusher.subscribe(`employee-${EMPLOYEE_ID}`);
+        
+        userChannel.bind('leave-approved', function(data) {
+            showToast('🎉 Your leave request was approved!', 'success');
+            loadHistory();
+        });
+        
+        userChannel.bind('leave-rejected', function(data) {
+            showToast('❌ Your leave request was rejected: ' + (data.reason || ''), 'danger');
+            loadHistory();
+        });
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadEmployeeInfo();
+            loadLeaveBalance();
+            loadHistory();
+            setMinDates();
+        });
+        
+        // Set minimum dates
+        function setMinDates() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('startDate').min = today;
+            document.getElementById('endDate').min = today;
+        }
+        
+        // Load employee info
+        async function loadEmployeeInfo() {
+            try {
+                const response = await fetch(`${API_BASE}/hierarchy/${EMPLOYEE_ID}`);
+                const data = await response.json();
+                
+                employeeData = data.employee;
+                
+                document.getElementById('employeeName').textContent = employeeData.full_name;
+                document.getElementById('employeeDetails').textContent = 
+                    `${employeeData.position} • ${employeeData.department}`;
+                document.getElementById('employeeAvatar').textContent = 
+                    employeeData.full_name.split(' ').map(n => n[0]).join('').substring(0, 2);
+                
+            } catch (error) {
+                console.error('Employee info error:', error);
+            }
+        }
+        
+        // Load leave balance
+        async function loadLeaveBalance() {
+            try {
+                const response = await fetch(`${API_BASE}/balance/${EMPLOYEE_ID}`);
+                leaveBalance = await response.json();
+                
+                const grid = document.getElementById('balanceGrid');
+                grid.innerHTML = `
+                    <div class="balance-item">
+                        <div class="balance-value">${leaveBalance.earned_leave?.available || 15}</div>
+                        <div class="balance-label">Earned Leave</div>
+                    </div>
+                    <div class="balance-item">
+                        <div class="balance-value">${leaveBalance.sick_leave?.available || 10}</div>
+                        <div class="balance-label">Sick Leave</div>
+                    </div>
+                    <div class="balance-item">
+                        <div class="balance-value">${leaveBalance.casual_leave?.available || 8}</div>
+                        <div class="balance-label">Casual Leave</div>
+                    </div>
+                    <div class="balance-item">
+                        <div class="balance-value">${leaveBalance.comp_off?.available || 0}</div>
+                        <div class="balance-label">Comp Off</div>
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('Balance error:', error);
+            }
+        }
+        
+        // Calculate days and update approval chain
+        function calculateDays() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const isHalfDay = document.getElementById('isHalfDay').checked;
+            
+            if (!startDate || !endDate) {
+                document.getElementById('daysPreview').classList.remove('show');
+                return;
+            }
+            
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            
+            if (end < start) {
+                document.getElementById('endDate').value = startDate;
+                return;
+            }
+            
+            let days = isHalfDay ? 0.5 : Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+            
+            document.getElementById('totalDays').textContent = days;
+            document.getElementById('daysPreview').classList.add('show');
+            
+            updateApprovalChain();
+        }
+        
+        // Update approval chain preview
+        async function updateApprovalChain() {
+            const days = parseFloat(document.getElementById('totalDays').textContent) || 1;
+            const leaveType = document.getElementById('leaveType').value || 'casual_leave';
+            
+            try {
+                const response = await fetch(`${API_BASE}/approval-chain/${EMPLOYEE_ID}?days=${days}&leave_type=${leaveType}`);
+                const data = await response.json();
+                
+                const chainDiv = document.getElementById('approvalChain');
+                
+                if (!data.approval_chain || data.approval_chain.length === 0) {
+                    chainDiv.innerHTML = '<span class="text-muted">No approval required</span>';
+                    return;
+                }
+                
+                chainDiv.innerHTML = data.approval_chain.map((approver, index) => `
+                    ${index > 0 ? '<i class="bi bi-arrow-right arrow"></i>' : ''}
+                    <div class="approver-badge">
+                        <span class="level">${approver.level}</span>
+                        <span>${approver.name}</span>
+                        <small class="text-muted">(${approver.role})</small>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Approval chain error:', error);
+            }
+        }
+        
+        // Submit leave request
+        async function submitLeave(event) {
+            event.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Submitting...';
+            
+            try {
+                const payload = {
+                    emp_id: EMPLOYEE_ID,
+                    leave_type: document.getElementById('leaveType').value,
+                    start_date: document.getElementById('startDate').value,
+                    end_date: document.getElementById('endDate').value,
+                    reason: document.getElementById('reason').value,
+                    is_half_day: document.getElementById('isHalfDay').checked
+                };
+                
+                const response = await fetch(`${API_BASE}/submit`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast(`✅ Leave request submitted! Request ID: ${result.request_id}`, 'success');
+                    document.getElementById('leaveForm').reset();
+                    document.getElementById('daysPreview').classList.remove('show');
+                    document.getElementById('approvalChain').innerHTML = '<span class="text-muted">Select dates to see approval chain</span>';
+                    loadHistory();
+                } else {
+                    showToast('❌ ' + (result.error || 'Submission failed'), 'danger');
+                }
+                
+            } catch (error) {
+                showToast('❌ Error submitting request', 'danger');
+                console.error('Submit error:', error);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="bi bi-send"></i> Submit Request';
+            }
+        }
+        
+        // Load leave history
+        async function loadHistory() {
+            try {
+                const response = await fetch(`${API_BASE}/history/${EMPLOYEE_ID}?limit=10`);
+                const data = await response.json();
+                
+                const historyList = document.getElementById('historyList');
+                
+                if (!data.requests || data.requests.length === 0) {
+                    historyList.innerHTML = '<div class="text-center py-4 text-muted">No leave history</div>';
+                    return;
+                }
+                
+                historyList.innerHTML = data.requests.map(req => {
+                    const startDate = new Date(req.start_date).toLocaleDateString();
+                    const endDate = new Date(req.end_date).toLocaleDateString();
+                    const statusClass = `status-${req.status}`;
+                    
+                    return `
+                        <div class="history-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>${req.leave_type.replace(/_/g, ' ')}</strong>
+                                    <div class="text-muted small">${startDate} - ${endDate} (${req.total_days} days)</div>
+                                    <div class="text-muted small">${req.reason || ''}</div>
+                                </div>
+                                <span class="badge ${statusClass}">${req.status}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+            } catch (error) {
+                console.error('History error:', error);
+            }
+        }
+        
+        // Show toast
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const colors = {
+                info: '#4F46E5',
+                success: '#10B981',
+                warning: '#F59E0B',
+                danger: '#EF4444'
+            };
+            
+            const toast = document.createElement('div');
+            toast.className = 'custom-toast';
+            toast.style.background = colors[type];
+            toast.textContent = message;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+    </script>
+</body>
+</html>

@@ -2,5 +2,25 @@
 # Markdown files
 *.md
 
-# Markdown files
-*.md
+# Dependencies
+node_modules/
+backend/node_modules/
+
+# Environment files
+.env
+*.env.local
+
+# Logs
+*.log
+engine.log
+
+# Test files
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+
+# Python cache
+__pycache__/
+*.pyc
+.venv/

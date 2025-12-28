@@ -32,6 +32,32 @@ const authenticateToken = async (req, res, next) => {
         return next();
     }
 
+    // HR Demo token for testing HR features
+    if (token === 'hr-demo-token' || token === 'hr-token') {
+        req.user = {
+            id: 2,
+            emp_id: 'EMP002',
+            employeeId: 'EMP002',
+            name: 'HR Manager',
+            role: 'hr',
+            department: 'Human Resources'
+        };
+        return next();
+    }
+
+    // Admin Demo token for testing admin features
+    if (token === 'admin-demo-token' || token === 'admin-token') {
+        req.user = {
+            id: 3,
+            emp_id: 'EMP003',
+            employeeId: 'EMP003',
+            name: 'Admin User',
+            role: 'admin',
+            department: 'Administration'
+        };
+        return next();
+    }
+
     // Verify JWT token
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret_key_change_me');

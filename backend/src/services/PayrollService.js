@@ -130,6 +130,20 @@ class PayrollService {
     // ==================== EMPLOYEE SALARY ====================
     
     /**
+     * Get all employee salaries for HR dashboard
+     */
+    async getAllSalaries() {
+        const salaries = await db.query(
+            `SELECT es.*, e.full_name, e.department, e.position
+             FROM employee_salary es
+             JOIN employees e ON es.emp_id = e.emp_id
+             WHERE es.effective_to IS NULL OR es.effective_to >= CURDATE()
+             ORDER BY e.full_name`
+        );
+        return salaries || [];
+    }
+    
+    /**
      * Get employee salary info
      */
     async getEmployeeSalary(empId) {
@@ -512,19 +526,20 @@ class PayrollService {
             
             const empDeductions = deductions[0]?.total || 0;
             const empAdditions = additions[0]?.total || 0;
-            const empTaxableAdditions = additions[0]?.taxable || 0;
+            const empTaxableAdditions = parseFloat(additions[0]?.taxable) || 0;
             
             totalDeductions += empDeductions;
             totalAdditions += empAdditions;
             
-            const netPay = (emp.base_salary || 0) - empDeductions + empAdditions;
+            const baseSalary = parseFloat(emp.base_salary) || 0;
+            const netPay = baseSalary - empDeductions + empAdditions;
             
             exportData.push({
                 employee_id: emp.emp_id,
                 employee_name: emp.full_name,
                 department: emp.department,
                 email: emp.email,
-                base_salary: emp.base_salary || 0,
+                base_salary: baseSalary,
                 deductions: empDeductions,
                 additions: empAdditions,
                 taxable_additions: empTaxableAdditions,
@@ -675,15 +690,25 @@ class PayrollService {
         );
         
         // Unprocessed leaves (approved unpaid leaves without deductions)
-        const unprocessedLeaves = await db.query(
-            `SELECT lr.*, e.full_name
-             FROM leave_requests lr
-             JOIN employees e ON lr.emp_id = e.emp_id
-             WHERE lr.status = 'approved'
-             AND lr.leave_type IN ('unpaid', 'lop', 'loss_of_pay')
-             AND lr.deduction_created = FALSE
-             LIMIT 20`
-        );
+        let unprocessedLeaves = [];
+        try {
+            unprocessedLeaves = await db.query(
+                `SELECT lr.*, e.full_name
+                 FROM leave_requests lr
+                 JOIN employees e ON lr.emp_id = e.emp_id
+                 WHERE lr.status = 'approved'
+                 AND lr.leave_type IN ('unpaid', 'lop', 'loss_of_pay')
+                 AND NOT EXISTS (
+                     SELECT 1 FROM payroll_deductions pd 
+                     WHERE pd.emp_id = lr.emp_id 
+                     AND pd.source_type = 'leave' 
+                     AND pd.source_id = lr.id
+                 )
+                 LIMIT 20`
+            ) || [];
+        } catch (e) {
+            console.log('Unprocessed leaves query skipped:', e.message);
+        }
         
         return {
             current_period: currentPeriod,

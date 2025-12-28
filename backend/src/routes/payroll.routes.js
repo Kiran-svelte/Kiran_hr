@@ -69,6 +69,9 @@ router.get('/periods/:id/download', authorize('hr', 'admin'), PayrollController.
 
 // ==================== SALARY MANAGEMENT ====================
 
+// Get all salaries (HR view)
+router.get('/salaries', authorize('hr', 'admin'), PayrollController.getAllSalaries.bind(PayrollController));
+
 // Get employee salary
 router.get('/salary/:empId', PayrollController.getEmployeeSalary.bind(PayrollController));
 

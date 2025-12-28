@@ -9,14 +9,19 @@ const PORT = process.env.PORT || 5000;
 
 // Global error handlers to prevent server crashes
 process.on('uncaughtException', (err) => {
-    console.error('Uncaught Exception:', err.message);
+    console.error('Uncaught Exception:', err.message, err.stack);
 });
 process.on('unhandledRejection', (reason, promise) => {
-    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    console.error('Unhandled Rejection:', reason);
 });
 
 app.use(cors());
 app.use(express.json());
+
+// Simple ping endpoint for testing
+app.get('/ping', (req, res) => {
+    res.json({ pong: true, time: Date.now() });
+});
 
 // Serve static files from the frontend (app directory)
 app.use('/app', express.static(path.join(__dirname, '..', 'app')));

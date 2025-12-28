@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apply for Leave - Enterprise Leave Management</title>
+    <script src="https://js.pusher.com/8.4.0/pusher.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+        }
+        
+        .app-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            padding: 40px 20px 30px;
+        }
+        
+        .header h1 {
+            font-size: 1.75rem;
+            margin-bottom: 8px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        
+        .balance-card {
+            padding: 24px;
+        }
+        
+        .balance-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+        
+        .balance-item {
+            text-align: center;
+            padding: 16px;
+            background: #F9FAFB;
+            border-radius: 12px;
+        }
+        
+        .balance-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .balance-label {
+            font-size: 0.75rem;
+            color: #6B7280;
+            margin-top: 4px;
+        }
+        
+        .form-card {
+            padding: 24px;
+        }
+        
+        .form-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            font-weight: 500;
+            margin-bottom: 8px;
+            display: block;
+        }
+        
+        .form-control, .form-select {
+            border-radius: 10px;
+            padding: 12px 16px;
+            border: 2px solid #E5E7EB;
+            transition: border-color 0.2s;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+        
+        .date-range {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        
+        .leave-type-selector {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        
+        .leave-type-option {
+            border: 2px solid #E5E7EB;
+            border-radius: 12px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        
+        .leave-type-option:hover {
+            border-color: var(--primary);
+            background: #F5F3FF;
+        }
+        
+        .leave-type-option.selected {
+            border-color: var(--primary);
+            background: #EEF2FF;
+        }
+        
+        .leave-type-option input {
+            display: none;
+        }
+        
+        .leave-type-icon {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+        }
+        
+        .leave-type-name {
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+        
+        .leave-type-balance {
+            font-size: 0.75rem;
+            color: #6B7280;
+        }
+        
+        .duration-preview {
+            background: #F0FDF4;
+            border: 1px solid #BBF7D0;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .duration-days {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--success);
+        }
+        
+        .btn-submit {
+            width: 100%;
+            padding: 16px;
+            background: var(--primary);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .btn-submit:hover {
+            background: #4338CA;
+        }
+        
+        .btn-submit:disabled {
+            background: #9CA3AF;
+            cursor: not-allowed;
+        }
+        
+        .approval-chain {
+            background: #F9FAFB;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .approval-chain-title {
+            font-weight: 600;
+            margin-bottom: 12px;
+            font-size: 0.875rem;
+            color: #6B7280;
+        }
+        
+        .approver-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 0;
+        }
+        
+        .approver-avatar {
+            width: 36px;
+            height: 36px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+        
+        .approver-info {
+            flex: 1;
+        }
+        
+        .approver-name {
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+        
+        .approver-role {
+            font-size: 0.75rem;
+            color: #6B7280;
+        }
+        
+        .step-badge {
+            background: #E5E7EB;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: #6B7280;
+        }
+        
+        .recent-leaves {
+            padding: 24px;
+        }
+        
+        .recent-title {
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+        
+        .recent-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: #F9FAFB;
+            border-radius: 10px;
+            margin-bottom: 8px;
+        }
+        
+        .recent-type {
+            font-weight: 600;
+        }
+        
+        .recent-dates {
+            font-size: 0.875rem;
+            color: #6B7280;
+        }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .status-pending { background: #FEF3C7; color: #92400E; }
+        .status-approved { background: #D1FAE5; color: #065F46; }
+        .status-rejected { background: #FEE2E2; color: #991B1B; }
+        
+        .toast-notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 16px 24px;
+            background: var(--success);
+            color: white;
+            border-radius: 12px;
+            font-weight: 500;
+            z-index: 9999;
+            animation: slideDown 0.3s ease;
+        }
+        
+        @keyframes slideDown {
+            from { transform: translate(-50%, -100%); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
+        }
+        
+        /* Mobile Responsive */
+        @media (max-width: 480px) {
+            .balance-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .leave-type-selector {
+                grid-template-columns: 1fr;
+            }
+            .date-range {
+                grid-template-columns: 1fr;
+            }
+            .header h1 {
+                font-size: 1.5rem;
+            }
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(255,255,255,0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        
+        .loading-overlay.show {
+            display: flex;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="text-center">
+            <div class="spinner-border text-primary mb-3" role="status"></div>
+            <div>Submitting your leave request...</div>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <div class="header">
+            <h1><i class="bi bi-calendar-plus me-2"></i>Apply for Leave</h1>
+            <p>Submit your leave request for approval</p>
+        </div>
+
+        <!-- Leave Balance Card -->
+        <div class="card balance-card">
+            <h3 class="form-title">
+                <i class="bi bi-wallet2"></i>
+                Your Leave Balance
+            </h3>
+            <div class="balance-grid">
+                <div class="balance-item">
+                    <div class="balance-value" id="earnedBalance">--</div>
+                    <div class="balance-label">Earned Leave</div>
+                </div>
+                <div class="balance-item">
+                    <div class="balance-value" id="sickBalance">--</div>
+                    <div class="balance-label">Sick Leave</div>
+                </div>
+                <div class="balance-item">
+                    <div class="balance-value" id="casualBalance">--</div>
+                    <div class="balance-label">Casual Leave</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Leave Application Form -->
+        <div class="card form-card">
+            <h3 class="form-title">
+                <i class="bi bi-pencil-square"></i>
+                Leave Request Details
+            </h3>
+
+            <form id="leaveForm">
+                <!-- Leave Type Selection -->
+                <div class="form-group">
+                    <label class="form-label">Select Leave Type</label>
+                    <div class="leave-type-selector" id="leaveTypeSelector">
+                        <label class="leave-type-option">
+                            <input type="radio" name="leaveType" value="earned_leave" required>
+                            <div class="leave-type-icon">🏖️</div>
+                            <div class="leave-type-name">Earned Leave</div>
+                            <div class="leave-type-balance"><span id="earnedAvail">--</span> available</div>
+                        </label>
+                        <label class="leave-type-option">
+                            <input type="radio" name="leaveType" value="sick_leave">
+                            <div class="leave-type-icon">🏥</div>
+                            <div class="leave-type-name">Sick Leave</div>
+                            <div class="leave-type-balance"><span id="sickAvail">--</span> available</div>
+                        </label>
+                        <label class="leave-type-option">
+                            <input type="radio" name="leaveType" value="casual_leave">
+                            <div class="leave-type-icon">☕</div>
+                            <div class="leave-type-name">Casual Leave</div>
+                            <div class="leave-type-balance"><span id="casualAvail">--</span> available</div>
+                        </label>
+                        <label class="leave-type-option">
+                            <input type="radio" name="leaveType" value="comp_off">
+                            <div class="leave-type-icon">🔄</div>
+                            <div class="leave-type-name">Comp Off</div>
+                            <div class="leave-type-balance"><span id="compOffAvail">--</span> available</div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Date Selection -->
+                <div class="form-group">
+                    <label class="form-label">Leave Duration</label>
+                    <div class="date-range">
+                        <div>
+                            <label class="small text-muted">From</label>
+                            <input type="date" class="form-control" id="startDate" required>
+                        </div>
+                        <div>
+                            <label class="small text-muted">To</label>
+                            <input type="date" class="form-control" id="endDate" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Half Day Option -->
+                <div class="form-group">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="isHalfDay">
+                        <label class="form-check-label" for="isHalfDay">
+                            Apply for half day only
+                        </label>
+                    </div>
+                    <div id="halfDayOptions" style="display: none; margin-top: 12px;">
+                        <select class="form-select" id="halfDayPeriod">
+                            <option value="first_half">First Half (Morning)</option>
+                            <option value="second_half">Second Half (Afternoon)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Duration Preview -->
+                <div class="duration-preview" id="durationPreview" style="display: none;">
+                    <div>
+                        <div class="small text-muted">Total Leave Days</div>
+                        <div class="duration-days"><span id="totalDays">0</span> days</div>
+                    </div>
+                    <div class="text-end">
+                        <div class="small text-muted">Working Days</div>
+                        <div id="workingDaysText">Excluding weekends</div>
+                    </div>
+                </div>
+
+                <!-- Reason -->
+                <div class="form-group">
+                    <label class="form-label">Reason for Leave</label>
+                    <textarea class="form-control" id="reason" rows="3" 
+                              placeholder="Please provide a brief reason..." required></textarea>
+                </div>
+
+                <!-- Emergency Contact -->
+                <div class="form-group">
+                    <label class="form-label">Emergency Contact (Optional)</label>
+                    <input type="tel" class="form-control" id="emergencyContact" 
+                           placeholder="Phone number where you can be reached">
+                </div>
+
+                <!-- Approval Chain Preview -->
+                <div class="approval-chain" id="approvalChain">
+                    <div class="approval-chain-title">
+                        <i class="bi bi-diagram-3 me-1"></i>
+                        Approval Chain
+                    </div>
+                    <div id="approversContainer">
+                        <!-- Dynamic approvers -->
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="btn-submit" id="submitBtn">
+                    <i class="bi bi-send me-2"></i>
+                    Submit Leave Request
+                </button>
+            </form>
+        </div>
+
+        <!-- Recent Leave Requests -->
+        <div class="card recent-leaves">
+            <h3 class="recent-title">
+                <i class="bi bi-clock-history me-2"></i>
+                Recent Requests
+            </h3>
+            <div id="recentRequests">
+                <!-- Dynamic content -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="toastContainer"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // ============================================================
+        // CONFIGURATION - PRODUCTION
+        // ============================================================
+        const API_BASE = 'http://localhost:5000/api/v3';  // Production API
+        const EMPLOYEE_ID = localStorage.getItem('employeeId') || 'EMP001'; // Current logged-in user
+
+        // ============================================================
+        // PUSHER SETUP FOR REAL-TIME NOTIFICATIONS
+        // ============================================================
+        const pusher = new Pusher('b6c8ed8a35f95339f71c', {
+            cluster: 'ap2'
+        });
+        
+        console.log('🔗 Pusher connected, subscribing to employee-' + EMPLOYEE_ID);
+
+        const userChannel = pusher.subscribe(`employee-${EMPLOYEE_ID}`);
+        
+        userChannel.bind('pusher:subscription_succeeded', () => {
+            console.log('✅ Subscribed to employee channel');
+        });
+        
+        // Listen for leave status updates
+        userChannel.bind('leave-approved', function(data) {
+            console.log('📨 Leave approved:', data);
+            showToast(`Your leave request has been approved!`, 'success');
+            loadRecentRequests();
+        });
+        
+        userChannel.bind('leave-rejected', function(data) {
+            console.log('📨 Leave rejected:', data);
+            showToast(`Your leave request was rejected: ${data.reason || ''}`, 'danger');
+            loadRecentRequests();
+        });
+        
+        userChannel.bind('pending-approval', function(data) {
+            console.log('📨 Pending approval notification:', data);
+            showToast(`A leave request needs your approval`, 'info');
+        });
+
+        // ============================================================
+        // PAGE INITIALIZATION
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', function() {
+            loadLeaveBalance();
+            loadApprovalChain();
+            loadRecentRequests();
+            initFormHandlers();
+            setMinDate();
+        });
+
+        // ============================================================
+        // LOAD LEAVE BALANCE
+        // ============================================================
+        async function loadLeaveBalance() {
+            try {
+                const response = await fetch(`${API_BASE}/employee/${EMPLOYEE_ID}/balance`);
+                const data = await response.json();
+                
+                document.getElementById('earnedBalance').textContent = data.earned_leave || 0;
+                document.getElementById('sickBalance').textContent = data.sick_leave || 0;
+                document.getElementById('casualBalance').textContent = data.casual_leave || 0;
+                
+                document.getElementById('earnedAvail').textContent = data.earned_leave || 0;
+                document.getElementById('sickAvail').textContent = data.sick_leave || 0;
+                document.getElementById('casualAvail').textContent = data.casual_leave || 0;
+                document.getElementById('compOffAvail').textContent = data.comp_off || 0;
+                
+            } catch (error) {
+                console.error('Balance load error:', error);
+                // Set default values
+                document.getElementById('earnedBalance').textContent = 15;
+                document.getElementById('sickBalance').textContent = 10;
+                document.getElementById('casualBalance').textContent = 8;
+            }
+        }
+
+        // ============================================================
+        // LOAD APPROVAL CHAIN
+        // ============================================================
+        async function loadApprovalChain() {
+            try {
+                const response = await fetch(`${API_BASE}/hierarchy/${EMPLOYEE_ID}`);
+                const data = await response.json();
+                
+                const container = document.getElementById('approversContainer');
+                container.innerHTML = data.approvers.map((approver, index) => `
+                    <div class="approver-item">
+                        <div class="approver-avatar">${approver.name.split(' ').map(n => n[0]).join('')}</div>
+                        <div class="approver-info">
+                            <div class="approver-name">${approver.name}</div>
+                            <div class="approver-role">${approver.position}</div>
+                        </div>
+                        <span class="step-badge">Level ${index + 1}</span>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                // Default chain
+                document.getElementById('approversContainer').innerHTML = `
+                    <div class="approver-item">
+                        <div class="approver-avatar">TL</div>
+                        <div class="approver-info">
+                            <div class="approver-name">Tech Lead</div>
+                            <div class="approver-role">First Level Approver</div>
+                        </div>
+                        <span class="step-badge">Level 1</span>
+                    </div>
+                    <div class="approver-item">
+                        <div class="approver-avatar">SM</div>
+                        <div class="approver-info">
+                            <div class="approver-name">Senior Manager</div>
+                            <div class="approver-role">Final Approver (>3 days)</div>
+                        </div>
+                        <span class="step-badge">Level 2</span>
+                    </div>
+                `;
+            }
+        }
+
+        // ============================================================
+        // LOAD RECENT REQUESTS
+        // ============================================================
+        async function loadRecentRequests() {
+            try {
+                const response = await fetch(`${API_BASE}/employee/${EMPLOYEE_ID}/leaves?limit=5`);
+                const data = await response.json();
+                
+                const container = document.getElementById('recentRequests');
+                
+                if (!data.requests || data.requests.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center text-muted py-4">
+                            <i class="bi bi-inbox fs-1"></i>
+                            <div class="mt-2">No recent leave requests</div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                container.innerHTML = data.requests.map(req => `
+                    <div class="recent-item">
+                        <div>
+                            <div class="recent-type">${req.leave_type.replace('_', ' ')}</div>
+                            <div class="recent-dates">${formatDate(req.start_date)} - ${formatDate(req.end_date)}</div>
+                        </div>
+                        <span class="status-badge status-${req.status}">${req.status}</span>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Recent requests load error:', error);
+            }
+        }
+
+        // ============================================================
+        // FORM HANDLERS
+        // ============================================================
+        function initFormHandlers() {
+            // Leave type selection
+            document.querySelectorAll('.leave-type-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    document.querySelectorAll('.leave-type-option').forEach(o => o.classList.remove('selected'));
+                    this.classList.add('selected');
+                    this.querySelector('input').checked = true;
+                    calculateDuration();
+                });
+            });
+
+            // Date change handlers
+            document.getElementById('startDate').addEventListener('change', calculateDuration);
+            document.getElementById('endDate').addEventListener('change', calculateDuration);
+
+            // Half day toggle
+            document.getElementById('isHalfDay').addEventListener('change', function() {
+                document.getElementById('halfDayOptions').style.display = this.checked ? 'block' : 'none';
+                if (this.checked) {
+                    document.getElementById('endDate').value = document.getElementById('startDate').value;
+                    document.getElementById('endDate').disabled = true;
+                } else {
+                    document.getElementById('endDate').disabled = false;
+                }
+                calculateDuration();
+            });
+
+            // Form submission
+            document.getElementById('leaveForm').addEventListener('submit', submitLeaveRequest);
+        }
+
+        function setMinDate() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('startDate').min = today;
+            document.getElementById('endDate').min = today;
+        }
+
+        function calculateDuration() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const isHalfDay = document.getElementById('isHalfDay').checked;
+            
+            if (!startDate || !endDate) {
+                document.getElementById('durationPreview').style.display = 'none';
+                return;
+            }
+            
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            
+            if (end < start) {
+                showToast('End date cannot be before start date', 'danger');
+                return;
+            }
+            
+            // Calculate working days (excluding weekends)
+            let workingDays = 0;
+            const current = new Date(start);
+            
+            while (current <= end) {
+                const dayOfWeek = current.getDay();
+                if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+                    workingDays++;
+                }
+                current.setDate(current.getDate() + 1);
+            }
+            
+            if (isHalfDay) {
+                workingDays = 0.5;
+            }
+            
+            document.getElementById('totalDays').textContent = workingDays;
+            document.getElementById('durationPreview').style.display = 'flex';
+        }
+
+        // ============================================================
+        // SUBMIT LEAVE REQUEST
+        // ============================================================
+        async function submitLeaveRequest(e) {
+            e.preventDefault();
+            
+            const leaveType = document.querySelector('input[name="leaveType"]:checked');
+            if (!leaveType) {
+                showToast('Please select a leave type', 'danger');
+                return;
+            }
+            
+            const formData = {
+                employee_id: EMPLOYEE_ID,
+                leave_type: leaveType.value,
+                start_date: document.getElementById('startDate').value,
+                end_date: document.getElementById('endDate').value,
+                is_half_day: document.getElementById('isHalfDay').checked,
+                half_day_period: document.getElementById('halfDayPeriod').value,
+                reason: document.getElementById('reason').value,
+                emergency_contact: document.getElementById('emergencyContact').value
+            };
+            
+            // Show loading
+            document.getElementById('loadingOverlay').classList.add('show');
+            document.getElementById('submitBtn').disabled = true;
+            
+            try {
+                const response = await fetch(`${API_BASE}/leave/submit`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showToast('Leave request submitted successfully!', 'success');
+                    document.getElementById('leaveForm').reset();
+                    document.querySelectorAll('.leave-type-option').forEach(o => o.classList.remove('selected'));
+                    document.getElementById('durationPreview').style.display = 'none';
+                    loadLeaveBalance();
+                    loadRecentRequests();
+                } else {
+                    showToast(result.error || 'Failed to submit request', 'danger');
+                }
+                
+            } catch (error) {
+                showToast('Network error. Please try again.', 'danger');
+            } finally {
+                document.getElementById('loadingOverlay').classList.remove('show');
+                document.getElementById('submitBtn').disabled = false;
+            }
+        }
+
+        // ============================================================
+        // UTILITY FUNCTIONS
+        // ============================================================
+        function formatDate(dateStr) {
+            return new Date(dateStr).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = 'toast-notification';
+            toast.style.background = type === 'success' ? '#10B981' : 
+                                     type === 'danger' ? '#EF4444' : '#F59E0B';
+            toast.innerHTML = `
+                <i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
+                ${message}
+            `;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+    </script>
+</body>
+</html>

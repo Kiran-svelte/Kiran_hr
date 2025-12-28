@@ -437,19 +437,58 @@
         let employees = [];
 
         function getToken() {
-            return localStorage.getItem('token') || 'demo-token-123';
+            // Check localStorage for real token first
+            const token = localStorage.getItem('token');
+            if (token) return token;
+            
+            // Check if user info exists in localStorage
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+                try {
+                    const user = JSON.parse(userStr);
+                    if (user.role === 'hr' || user.role === 'admin') {
+                        return user.role === 'admin' ? 'admin-demo-token' : 'hr-demo-token';
+                    }
+                } catch(e) {}
+            }
+            
+            // For HR payroll page, default to HR token for testing
+            return 'hr-demo-token';
+        }
+
+        function getCurrentUser() {
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+                try {
+                    return JSON.parse(userStr);
+                } catch(e) {}
+            }
+            // Default HR user for testing
+            return { name: 'HR Manager', role: 'hr', emp_id: 'EMP002' };
         }
 
         async function apiCall(endpoint, options = {}) {
-            const response = await fetch(`${API_BASE}${endpoint}`, {
-                ...options,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${getToken()}`,
-                    ...options.headers
+            try {
+                const response = await fetch(`${API_BASE}${endpoint}`, {
+                    ...options,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getToken()}`,
+                        ...options.headers
+                    }
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    console.error('API Error:', data);
+                    if (response.status === 403) {
+                        showToast('Access Denied', 'You need HR or Admin role to access this feature', 'error');
+                    }
                 }
-            });
-            return response.json();
+                return data;
+            } catch(error) {
+                console.error('API Call failed:', error);
+                return { success: false, error: error.message };
+            }
         }
 
         function showToast(title, message, type = 'info') {
@@ -923,12 +962,81 @@
         // Load employees for salary dropdown
         async function loadEmployees() {
             try {
-                // This would be an employees API - for now use a simple approach
-                const select = document.getElementById('salaryEmpId');
-                // You'd normally populate this from an API
+                const result = await apiCall('/employees/all');
+                if (result.success && result.employees) {
+                    employees = result.employees;
+                    const select = document.getElementById('salaryEmpId');
+                    select.innerHTML = '<option value="">Select Employee...</option>' + 
+                        employees.map(e => `<option value="${e.emp_id}">${e.full_name} (${e.emp_id})</option>`).join('');
+                    
+                    // Also load and display salaries
+                    loadSalaries();
+                }
             } catch (e) {
                 console.error('Load employees error:', e);
             }
+        }
+
+        // Load all salaries
+        async function loadSalaries() {
+            try {
+                const result = await apiCall('/payroll/salaries');
+                if (result.success) {
+                    displaySalaries(result.salaries);
+                } else {
+                    // Fallback - show employees without salary setup
+                    displaySalariesFromDashboard();
+                }
+            } catch (e) {
+                console.error('Load salaries error:', e);
+                displaySalariesFromDashboard();
+            }
+        }
+
+        function displaySalariesFromDashboard() {
+            const tbody = document.getElementById('salariesTable');
+            if (employees.length > 0) {
+                tbody.innerHTML = employees.map(e => `
+                    <tr>
+                        <td>${e.full_name}</td>
+                        <td>${e.department || 'N/A'}</td>
+                        <td class="text-muted">Not Set</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="openSalaryModal('${e.emp_id}', '${e.full_name}')">
+                                <i class="bi bi-plus"></i> Set Salary
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            } else {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No employees found</td></tr>';
+            }
+        }
+
+        function displaySalaries(salaries) {
+            const tbody = document.getElementById('salariesTable');
+            
+            if (!salaries || salaries.length === 0) {
+                displaySalariesFromDashboard();
+                return;
+            }
+
+            tbody.innerHTML = salaries.map(s => `
+                <tr>
+                    <td>${s.full_name}</td>
+                    <td>${s.department || 'N/A'}</td>
+                    <td class="text-success fw-bold">${formatCurrency(s.base_salary)}</td>
+                    <td>${s.pay_frequency || 'monthly'}</td>
+                    <td>${s.effective_from ? new Date(s.effective_from).toLocaleDateString() : '-'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="openSalaryModal('${s.emp_id}', '${s.full_name}')">
+                            <i class="bi bi-pencil"></i> Edit
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
         }
 
         // Initialize

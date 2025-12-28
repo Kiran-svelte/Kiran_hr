@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR Analytics Dashboard - Enterprise Leave Management</title>
+    <script src="https://js.pusher.com/8.4.0/pusher.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            --dark: #1F2937;
+        }
+        
+        * { box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #F3F4F6;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 260px;
+            background: var(--dark);
+            color: white;
+            padding: 20px;
+            z-index: 1000;
+        }
+        
+        .sidebar-brand {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            color: #9CA3AF;
+            text-decoration: none;
+            border-radius: 8px;
+            margin-bottom: 4px;
+            transition: all 0.2s;
+        }
+        
+        .sidebar-nav a:hover, .sidebar-nav a.active {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+        
+        .main-content {
+            margin-left: 260px;
+            padding: 24px;
+            min-height: 100vh;
+        }
+        
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        
+        .page-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--dark);
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            height: 100%;
+        }
+        
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+        
+        .stat-label {
+            color: #6B7280;
+            font-size: 0.875rem;
+            margin-top: 8px;
+        }
+        
+        .stat-change {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.875rem;
+            padding: 4px 8px;
+            border-radius: 20px;
+            margin-top: 8px;
+        }
+        
+        .stat-change.positive { background: #D1FAE5; color: #059669; }
+        .stat-change.negative { background: #FEE2E2; color: #DC2626; }
+        
+        .chart-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 24px;
+        }
+        
+        .chart-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+        
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px;
+            border-bottom: 1px solid #E5E7EB;
+        }
+        
+        .table-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+        
+        .table-actions {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+        
+        .btn-success {
+            background: var(--success);
+            border-color: var(--success);
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .data-table th {
+            background: #F9FAFB;
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: #6B7280;
+        }
+        
+        .data-table td {
+            padding: 16px;
+            border-bottom: 1px solid #E5E7EB;
+        }
+        
+        .data-table tr:hover {
+            background: #F9FAFB;
+        }
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .status-pending { background: #FEF3C7; color: #92400E; }
+        .status-approved { background: #D1FAE5; color: #065F46; }
+        .status-rejected { background: #FEE2E2; color: #991B1B; }
+        .status-escalated { background: #DBEAFE; color: #1E40AF; }
+        
+        .sla-breach {
+            background: #FEE2E2;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .checkbox-col {
+            width: 40px;
+        }
+        
+        .bulk-actions {
+            display: none;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 24px;
+            background: #EEF2FF;
+            border-bottom: 1px solid #E5E7EB;
+        }
+        
+        .bulk-actions.show {
+            display: flex;
+        }
+        
+        .notification-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            background: var(--primary);
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 9999;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.875rem;
+            color: #6B7280;
+        }
+        
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        /* Mobile Responsive */
+        @media (max-width: 992px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s;
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+            }
+            .mobile-toggle {
+                display: block !important;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .stat-card {
+                padding: 16px;
+            }
+            .stat-value {
+                font-size: 1.75rem;
+            }
+            .data-table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+        
+        .mobile-toggle {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1001;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 14px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Mobile Toggle -->
+    <button class="mobile-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list fs-5"></i>
+    </button>
+
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <i class="bi bi-building"></i>
+            <span>TechCorp HR</span>
+        </div>
+        <div class="sidebar-nav">
+            <a href="#" class="active"><i class="bi bi-speedometer2"></i> Dashboard</a>
+            <a href="#pending"><i class="bi bi-clock-history"></i> Pending Requests</a>
+            <a href="#approved"><i class="bi bi-check-circle"></i> Approved</a>
+            <a href="#reports"><i class="bi bi-file-earmark-bar-graph"></i> Reports</a>
+            <a href="#employees"><i class="bi bi-people"></i> Employees</a>
+            <a href="../hr-payroll.html"><i class="bi bi-wallet2"></i> Payroll</a>
+            <a href="#settings"><i class="bi bi-gear"></i> Settings</a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <div>
+                <h1 class="page-title">HR Analytics Dashboard</h1>
+                <div class="live-indicator">
+                    <span class="live-dot"></span>
+                    <span>Live Updates Active</span>
+                </div>
+            </div>
+            <div class="d-flex gap-3 align-items-center">
+                <span class="text-muted" id="lastUpdate">Last update: --</span>
+                <button class="btn btn-outline-secondary" onclick="refreshDashboard()">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats Row -->
+        <div class="row g-4 mb-4">
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="stat-value text-warning" id="pendingCount">--</div>
+                            <div class="stat-label">Pending Requests</div>
+                        </div>
+                        <i class="bi bi-hourglass-split fs-1 text-warning opacity-25"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="stat-value text-success" id="approvedCount">--</div>
+                            <div class="stat-label">Approved This Month</div>
+                        </div>
+                        <i class="bi bi-check-circle fs-1 text-success opacity-25"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="stat-value text-danger" id="slaBreachCount">--</div>
+                            <div class="stat-label">SLA Breaches</div>
+                        </div>
+                        <i class="bi bi-exclamation-triangle fs-1 text-danger opacity-25"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="stat-card">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="stat-value text-primary" id="totalDays">--</div>
+                            <div class="stat-label">Days Requested</div>
+                        </div>
+                        <i class="bi bi-calendar-range fs-1 text-primary opacity-25"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row g-4 mb-4">
+            <div class="col-12 col-lg-8">
+                <div class="chart-card">
+                    <div class="chart-title">Leave Requests Trend (Last 30 Days)</div>
+                    <canvas id="trendChart" height="100"></canvas>
+                </div>
+            </div>
+            <div class="col-12 col-lg-4">
+                <div class="chart-card">
+                    <div class="chart-title">By Leave Type</div>
+                    <canvas id="typeChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-12 col-lg-6">
+                <div class="chart-card">
+                    <div class="chart-title">By Department</div>
+                    <canvas id="deptChart"></canvas>
+                </div>
+            </div>
+            <div class="col-12 col-lg-6">
+                <div class="chart-card">
+                    <div class="chart-title">Pending by Approver</div>
+                    <canvas id="approverChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Requests Table -->
+        <div class="table-container">
+            <div class="table-header">
+                <div class="table-title">
+                    <i class="bi bi-clock-history me-2"></i>
+                    Pending Leave Requests
+                    <span class="badge bg-warning text-dark ms-2" id="pendingBadge">0</span>
+                </div>
+                <div class="table-actions">
+                    <select class="form-select form-select-sm" id="filterDepartment" style="width: 150px;">
+                        <option value="">All Departments</option>
+                        <option value="Engineering">Engineering</option>
+                        <option value="HR">HR</option>
+                        <option value="Finance">Finance</option>
+                    </select>
+                    <select class="form-select form-select-sm" id="filterLeaveType" style="width: 150px;">
+                        <option value="">All Types</option>
+                        <option value="earned_leave">Earned Leave</option>
+                        <option value="sick_leave">Sick Leave</option>
+                        <option value="casual_leave">Casual Leave</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="bulk-actions" id="bulkActions">
+                <span id="selectedCount">0 selected</span>
+                <button class="btn btn-success btn-sm" onclick="bulkApprove()">
+                    <i class="bi bi-check-all"></i> Bulk Approve
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="bulkReject()">
+                    <i class="bi bi-x-lg"></i> Bulk Reject
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" onclick="clearSelection()">
+                    Cancel
+                </button>
+            </div>
+
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th class="checkbox-col">
+                            <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                        </th>
+                        <th>Employee</th>
+                        <th>Type</th>
+                        <th>Duration</th>
+                        <th>Days</th>
+                        <th>Approver</th>
+                        <th>Pending Since</th>
+                        <th>SLA Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="pendingTableBody">
+                    <tr>
+                        <td colspan="9" class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status"></div>
+                            <div class="mt-2">Loading...</div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div class="d-flex justify-content-between align-items-center p-3">
+                <span class="text-muted" id="paginationInfo">Showing 0 of 0</span>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0" id="pagination"></ul>
+                </nav>
+            </div>
+        </div>
+    </main>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer"></div>
+
+    <!-- Approval Modal -->
+    <div class="modal fade" id="approvalModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle">Leave Request Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalBody">
+                    <!-- Dynamic content -->
+                </div>
+                <div class="modal-footer">
+                    <textarea class="form-control mb-3" id="approvalComments" placeholder="Comments (optional)" rows="2"></textarea>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="btnReject">
+                        <i class="bi bi-x-lg"></i> Reject
+                    </button>
+                    <button type="button" class="btn btn-success" id="btnApprove">
+                        <i class="bi bi-check-lg"></i> Approve
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // ============================================================
+        // CONFIGURATION - PRODUCTION ENDPOINTS
+        // ============================================================
+        const API_BASE = 'http://localhost:5000/api/v3';  // Production API
+        let currentPage = 1;
+        let selectedRequests = new Set();
+        let charts = {};
+
+        // ============================================================
+        // PUSHER REAL-TIME SETUP - YOUR ACTUAL CREDENTIALS
+        // ============================================================
+        Pusher.logToConsole = true;  // Enable for debugging
+        const pusher = new Pusher('b6c8ed8a35f95339f71c', {
+            cluster: 'ap2'
+        });
+        
+        console.log('🔗 Pusher connected with key: b6c8ed8a35f95339f71c');
+
+        // Subscribe to HR notifications channel
+        const hrChannel = pusher.subscribe('hr-notifications');
+        const dashboardChannel = pusher.subscribe('hr-dashboard');
+        
+        hrChannel.bind('pusher:subscription_succeeded', () => {
+            console.log('✅ Subscribed to hr-notifications');
+        });
+        
+        dashboardChannel.bind('pusher:subscription_succeeded', () => {
+            console.log('✅ Subscribed to hr-dashboard');
+        });
+
+        // Listen for new leave requests
+        hrChannel.bind('new-leave-request', function(data) {
+            console.log('📨 New leave request:', data);
+            showNotification(`New leave request from ${data.employee || data.employee_name}`, 'info');
+            refreshDashboard();
+        });
+
+        // Listen for leave status changes
+        hrChannel.bind('leave-approved', function(data) {
+            console.log('📨 Leave approved:', data);
+            showNotification(`Leave approved for ${data.employee || data.employee_name}`, 'success');
+            refreshDashboard();
+        });
+
+        hrChannel.bind('leave-rejected', function(data) {
+            console.log('📨 Leave rejected:', data);
+            showNotification(`Leave rejected for ${data.employee || data.employee_name}`, 'warning');
+            refreshDashboard();
+        });
+
+        // Listen for SLA breaches
+        hrChannel.bind('sla-breach', function(data) {
+            console.log('📨 SLA breach:', data);
+            showNotification(`SLA BREACH: Request needs attention!`, 'danger');
+            refreshDashboard();
+        });
+
+        // Listen for bulk action completion
+        dashboardChannel.bind('bulk-action-complete', function(data) {
+            showNotification(`Bulk ${data.action}: ${data.success}/${data.total} successful`, 'success');
+            refreshDashboard();
+        });
+
+        // Listen for dashboard updates
+        dashboardChannel.bind('leave-status-changed', function(data) {
+            refreshDashboard();
+        });
+
+        // ============================================================
+        // NOTIFICATION SYSTEM
+        // ============================================================
+        function showNotification(message, type = 'info') {
+            const container = document.getElementById('notificationContainer');
+            const toast = document.createElement('div');
+            toast.className = 'notification-toast';
+            
+            const colors = {
+                info: '#4F46E5',
+                success: '#10B981',
+                warning: '#F59E0B',
+                danger: '#EF4444'
+            };
+            toast.style.background = colors[type] || colors.info;
+            
+            toast.innerHTML = `
+                <div class="d-flex align-items-center gap-3">
+                    <i class="bi bi-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-triangle' : 'info-circle'}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => toast.remove(), 300);
+            }, 5000);
+        }
+
+        // ============================================================
+        // DASHBOARD DATA LOADING
+        // ============================================================
+        async function loadDashboard() {
+            try {
+                const response = await fetch(`${API_BASE}/analytics/dashboard`);
+                const data = await response.json();
+
+                // Update stat cards
+                document.getElementById('pendingCount').textContent = data.summary.pending_requests || 0;
+                document.getElementById('approvedCount').textContent = data.summary.month_approved || 0;
+                document.getElementById('slaBreachCount').textContent = data.summary.sla_breaches || 0;
+                document.getElementById('totalDays').textContent = Math.round(data.summary.total_days_requested || 0);
+
+                // Update charts
+                updateTrendChart(data.daily_trend);
+                updateTypeChart(data.by_leave_type);
+                updateDeptChart(data.by_department);
+                updateApproverChart(data.pending_by_approver);
+
+                document.getElementById('lastUpdate').textContent = 
+                    `Last update: ${new Date().toLocaleTimeString()}`;
+
+            } catch (error) {
+                console.error('Dashboard load error:', error);
+                showNotification('Failed to load dashboard data', 'danger');
+            }
+        }
+
+        async function loadPendingRequests(page = 1) {
+            const department = document.getElementById('filterDepartment').value;
+            const leaveType = document.getElementById('filterLeaveType').value;
+            
+            try {
+                let url = `${API_BASE}/leave/pending?page=${page}&limit=50`;
+                if (department) url += `&department=${department}`;
+                if (leaveType) url += `&leave_type=${leaveType}`;
+
+                const response = await fetch(url);
+                const data = await response.json();
+
+                renderPendingTable(data.requests);
+                renderPagination(data.pagination);
+                document.getElementById('pendingBadge').textContent = data.pagination.total;
+
+            } catch (error) {
+                console.error('Pending requests load error:', error);
+            }
+        }
+
+        // ============================================================
+        // CHART RENDERING
+        // ============================================================
+        function updateTrendChart(trendData) {
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            
+            if (charts.trend) charts.trend.destroy();
+            
+            charts.trend = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: trendData.map(d => new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
+                    datasets: [{
+                        label: 'Requests',
+                        data: trendData.map(d => d.count),
+                        borderColor: '#4F46E5',
+                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        function updateTypeChart(typeData) {
+            const ctx = document.getElementById('typeChart').getContext('2d');
+            
+            if (charts.type) charts.type.destroy();
+            
+            charts.type = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: typeData.map(d => d.leave_type.replace('_', ' ').toUpperCase()),
+                    datasets: [{
+                        data: typeData.map(d => d.count),
+                        backgroundColor: ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        }
+
+        function updateDeptChart(deptData) {
+            const ctx = document.getElementById('deptChart').getContext('2d');
+            
+            if (charts.dept) charts.dept.destroy();
+            
+            charts.dept = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: deptData.map(d => d.department),
+                    datasets: [{
+                        label: 'Requests',
+                        data: deptData.map(d => d.count),
+                        backgroundColor: '#4F46E5'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        function updateApproverChart(approverData) {
+            const ctx = document.getElementById('approverChart').getContext('2d');
+            
+            if (charts.approver) charts.approver.destroy();
+            
+            charts.approver = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: approverData.map(d => d.approver_name),
+                    datasets: [{
+                        label: 'Pending',
+                        data: approverData.map(d => d.pending_count),
+                        backgroundColor: '#F59E0B'
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        // ============================================================
+        // TABLE RENDERING
+        // ============================================================
+        function renderPendingTable(requests) {
+            const tbody = document.getElementById('pendingTableBody');
+            
+            if (!requests || requests.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="9" class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox fs-1"></i>
+                            <div class="mt-2">No pending requests</div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = requests.map(req => `
+                <tr class="${req.is_sla_breached ? 'sla-breach' : ''}" data-id="${req.request_id}">
+                    <td class="checkbox-col">
+                        <input type="checkbox" class="request-checkbox" value="${req.request_id}" 
+                               onchange="updateSelection()">
+                    </td>
+                    <td>
+                        <div class="fw-semibold">${req.full_name}</div>
+                        <div class="small text-muted">${req.department} • ${req.position}</div>
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-dark">${req.leave_type.replace('_', ' ')}</span>
+                    </td>
+                    <td>
+                        <div>${formatDate(req.start_date)}</div>
+                        <div class="small text-muted">to ${formatDate(req.end_date)}</div>
+                    </td>
+                    <td><strong>${req.total_days}</strong> days</td>
+                    <td>
+                        <div>${req.approver_name || 'N/A'}</div>
+                        <div class="small text-muted">Level ${req.current_level}</div>
+                    </td>
+                    <td>
+                        <div>${req.hours_pending}h ago</div>
+                    </td>
+                    <td>
+                        ${req.is_sla_breached ? 
+                            '<span class="status-badge status-escalated"><i class="bi bi-exclamation-triangle me-1"></i>BREACHED</span>' :
+                            '<span class="status-badge status-pending">Within SLA</span>'
+                        }
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="viewRequest('${req.request_id}')">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-success" onclick="approveRequest('${req.request_id}')">
+                            <i class="bi bi-check"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="rejectRequest('${req.request_id}')">
+                            <i class="bi bi-x"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderPagination(pagination) {
+            const paginationEl = document.getElementById('pagination');
+            const infoEl = document.getElementById('paginationInfo');
+            
+            const start = (pagination.page - 1) * pagination.limit + 1;
+            const end = Math.min(pagination.page * pagination.limit, pagination.total);
+            infoEl.textContent = `Showing ${start}-${end} of ${pagination.total}`;
+
+            let html = '';
+            for (let i = 1; i <= pagination.pages; i++) {
+                html += `
+                    <li class="page-item ${i === pagination.page ? 'active' : ''}">
+                        <a class="page-link" href="#" onclick="loadPendingRequests(${i})">${i}</a>
+                    </li>
+                `;
+            }
+            paginationEl.innerHTML = html;
+        }
+
+        // ============================================================
+        // SELECTION & BULK ACTIONS
+        // ============================================================
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('selectAll').checked;
+            const checkboxes = document.querySelectorAll('.request-checkbox');
+            
+            checkboxes.forEach(cb => {
+                cb.checked = selectAll;
+                if (selectAll) {
+                    selectedRequests.add(cb.value);
+                } else {
+                    selectedRequests.delete(cb.value);
+                }
+            });
+            
+            updateBulkActionsBar();
+        }
+
+        function updateSelection() {
+            selectedRequests.clear();
+            document.querySelectorAll('.request-checkbox:checked').forEach(cb => {
+                selectedRequests.add(cb.value);
+            });
+            updateBulkActionsBar();
+        }
+
+        function updateBulkActionsBar() {
+            const bulkBar = document.getElementById('bulkActions');
+            const countEl = document.getElementById('selectedCount');
+            
+            if (selectedRequests.size > 0) {
+                bulkBar.classList.add('show');
+                countEl.textContent = `${selectedRequests.size} selected`;
+            } else {
+                bulkBar.classList.remove('show');
+            }
+        }
+
+        function clearSelection() {
+            selectedRequests.clear();
+            document.querySelectorAll('.request-checkbox').forEach(cb => cb.checked = false);
+            document.getElementById('selectAll').checked = false;
+            updateBulkActionsBar();
+        }
+
+        async function bulkApprove() {
+            if (selectedRequests.size === 0) return;
+            
+            if (!confirm(`Approve ${selectedRequests.size} leave requests?`)) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/leave/bulk-action`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        request_ids: Array.from(selectedRequests),
+                        action: 'approve',
+                        comments: 'Bulk approved by HR',
+                        approver_id: 'EMP003' // Current HR user
+                    })
+                });
+
+                const result = await response.json();
+                showNotification(
+                    `Bulk approve: ${result.successful}/${result.total} successful`,
+                    result.failed > 0 ? 'warning' : 'success'
+                );
+                
+                clearSelection();
+                refreshDashboard();
+
+            } catch (error) {
+                showNotification('Bulk approve failed', 'danger');
+            }
+        }
+
+        async function bulkReject() {
+            if (selectedRequests.size === 0) return;
+            
+            const reason = prompt('Enter rejection reason:');
+            if (!reason) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/leave/bulk-action`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        request_ids: Array.from(selectedRequests),
+                        action: 'reject',
+                        comments: reason,
+                        approver_id: 'EMP003'
+                    })
+                });
+
+                const result = await response.json();
+                showNotification(
+                    `Bulk reject: ${result.successful}/${result.total} successful`,
+                    'success'
+                );
+                
+                clearSelection();
+                refreshDashboard();
+
+            } catch (error) {
+                showNotification('Bulk reject failed', 'danger');
+            }
+        }
+
+        // ============================================================
+        // SINGLE REQUEST ACTIONS
+        // ============================================================
+        async function approveRequest(requestId) {
+            try {
+                const response = await fetch(`${API_BASE}/leave/${requestId}/action`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'approve',
+                        comments: '',
+                        approver_id: 'EMP003'
+                    })
+                });
+
+                if (response.ok) {
+                    showNotification('Leave request approved', 'success');
+                    refreshDashboard();
+                }
+            } catch (error) {
+                showNotification('Approval failed', 'danger');
+            }
+        }
+
+        async function rejectRequest(requestId) {
+            const reason = prompt('Enter rejection reason:');
+            if (!reason) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/leave/${requestId}/action`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'reject',
+                        comments: reason,
+                        approver_id: 'EMP003'
+                    })
+                });
+
+                if (response.ok) {
+                    showNotification('Leave request rejected', 'success');
+                    refreshDashboard();
+                }
+            } catch (error) {
+                showNotification('Rejection failed', 'danger');
+            }
+        }
+
+        function viewRequest(requestId) {
+            // Show modal with details
+            showNotification(`Viewing request ${requestId}`, 'info');
+        }
+
+        // ============================================================
+        // UTILITY FUNCTIONS
+        // ============================================================
+        function formatDate(dateStr) {
+            return new Date(dateStr).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            });
+        }
+
+        function refreshDashboard() {
+            loadDashboard();
+            loadPendingRequests(currentPage);
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+        }
+
+        // Filter change handlers
+        document.getElementById('filterDepartment').addEventListener('change', () => loadPendingRequests(1));
+        document.getElementById('filterLeaveType').addEventListener('change', () => loadPendingRequests(1));
+
+        // ============================================================
+        // INITIALIZATION
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboard();
+            loadPendingRequests(1);
+            
+            // Auto refresh every 30 seconds
+            setInterval(refreshDashboard, 30000);
+        });
+    </script>
+</body>
+</html>

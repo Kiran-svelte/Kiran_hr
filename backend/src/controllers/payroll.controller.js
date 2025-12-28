@@ -103,6 +103,21 @@ class PayrollController {
     // ==================== EMPLOYEE SALARY (HR/Admin) ====================
     
     /**
+     * Get all employee salaries (HR Dashboard)
+     * GET /api/payroll/salaries
+     * Access: HR, Admin
+     */
+    async getAllSalaries(req, res) {
+        try {
+            const salaries = await PayrollService.getAllSalaries();
+            res.json({ success: true, salaries });
+        } catch (error) {
+            console.error('Get all salaries error:', error);
+            res.status(500).json({ success: false, error: error.message });
+        }
+    }
+    
+    /**
      * Get employee salary
      * GET /api/payroll/salary/:empId
      * Access: HR, Admin (any employee), Employee (own only)

@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Calendar - Leave Overview</title>
+    <script src="https://js.pusher.com/8.4.0/pusher.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            --dark: #1F2937;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: #F3F4F6;
+            margin: 0;
+        }
+        
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 250px;
+            background: var(--dark);
+            padding: 20px;
+            color: white;
+        }
+        
+        .sidebar h4 {
+            margin-bottom: 30px;
+            font-weight: 700;
+        }
+        
+        .sidebar a {
+            display: block;
+            padding: 12px 16px;
+            color: #9CA3AF;
+            text-decoration: none;
+            border-radius: 8px;
+            margin-bottom: 4px;
+        }
+        
+        .sidebar a:hover, .sidebar a.active {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+        
+        .main-content {
+            margin-left: 250px;
+            padding: 24px;
+        }
+        
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: none;
+        }
+        
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid #E5E7EB;
+        }
+        
+        .calendar-nav {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .calendar-nav button {
+            background: none;
+            border: 1px solid #E5E7EB;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        
+        .calendar-nav button:hover {
+            background: #F3F4F6;
+        }
+        
+        .calendar-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+        
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: 200px repeat(7, 1fr);
+            border-bottom: 1px solid #E5E7EB;
+        }
+        
+        .calendar-header-row {
+            display: contents;
+        }
+        
+        .calendar-header-cell {
+            padding: 12px 8px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.75rem;
+            color: #6B7280;
+            border-bottom: 1px solid #E5E7EB;
+            background: #F9FAFB;
+        }
+        
+        .calendar-header-cell.name-col {
+            text-align: left;
+            padding-left: 16px;
+        }
+        
+        .calendar-row {
+            display: contents;
+        }
+        
+        .calendar-cell {
+            padding: 8px;
+            border-bottom: 1px solid #F3F4F6;
+            border-right: 1px solid #F3F4F6;
+            min-height: 50px;
+            position: relative;
+        }
+        
+        .calendar-cell.name-cell {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 16px;
+            background: #FAFAFA;
+        }
+        
+        .employee-avatar {
+            width: 32px;
+            height: 32px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .employee-name {
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+        
+        .employee-position {
+            font-size: 0.7rem;
+            color: #9CA3AF;
+        }
+        
+        .leave-block {
+            position: absolute;
+            top: 4px;
+            left: 2px;
+            right: 2px;
+            bottom: 4px;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 0.7rem;
+            color: white;
+            overflow: hidden;
+            cursor: pointer;
+        }
+        
+        .leave-casual { background: #10B981; }
+        .leave-sick { background: #F59E0B; }
+        .leave-earned { background: #4F46E5; }
+        .leave-comp { background: #8B5CF6; }
+        
+        .leave-start {
+            border-radius: 4px 0 0 4px;
+            margin-right: 0;
+        }
+        
+        .leave-middle {
+            border-radius: 0;
+            margin-left: 0;
+            margin-right: 0;
+        }
+        
+        .leave-end {
+            border-radius: 0 4px 4px 0;
+            margin-left: 0;
+        }
+        
+        .leave-single {
+            border-radius: 4px;
+        }
+        
+        .today-column {
+            background: #EEF2FF;
+        }
+        
+        .weekend {
+            background: #F9FAFB;
+        }
+        
+        .team-summary {
+            display: flex;
+            gap: 24px;
+            padding: 16px 20px;
+            border-bottom: 1px solid #E5E7EB;
+        }
+        
+        .summary-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .summary-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .legend {
+            display: flex;
+            gap: 16px;
+            padding: 12px 20px;
+            background: #F9FAFB;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+        }
+        
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+        
+        .manager-selector {
+            padding: 16px 20px;
+            border-bottom: 1px solid #E5E7EB;
+        }
+        
+        .no-leaves {
+            text-align: center;
+            padding: 40px;
+            color: #6B7280;
+        }
+        
+        @media (max-width: 1200px) {
+            .calendar-grid {
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h4><i class="bi bi-building"></i> Leave Portal</h4>
+        <nav>
+            <a href="leave-management.html"><i class="bi bi-speedometer2"></i> Dashboard</a>
+            <a href="#" class="active"><i class="bi bi-calendar3"></i> Team Calendar</a>
+            <a href="../employee/leave-apply.html"><i class="bi bi-plus-circle"></i> Apply Leave</a>
+            <a href="../hr-payroll.html"><i class="bi bi-wallet2"></i> Payroll</a>
+        </nav>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="top-bar">
+            <div>
+                <h1 style="font-size: 1.5rem; font-weight: 700;">Team Calendar</h1>
+                <p class="text-muted mb-0">See who's on leave</p>
+            </div>
+            <button class="btn btn-primary" onclick="refreshCalendar()">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+        </div>
+        
+        <!-- Calendar Card -->
+        <div class="card">
+            <!-- Manager Selector -->
+            <div class="manager-selector">
+                <div class="row align-items-center">
+                    <div class="col-md-4">
+                        <label class="form-label mb-1">View Team Of:</label>
+                        <select class="form-select" id="managerSelect" onchange="loadCalendar()">
+                            <option value="EMP001">Rajesh Kumar (CEO) - All</option>
+                            <option value="EMP003">Amit Patel (Engineering Director)</option>
+                            <option value="EMP007">Rahul Verma (Engineering Manager)</option>
+                            <option value="EMP008">Deepak Joshi (Engineering Manager)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label mb-1">Month:</label>
+                        <input type="month" class="form-control" id="monthPicker" onchange="loadCalendar()">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Team Summary -->
+            <div class="team-summary">
+                <div class="summary-item">
+                    <i class="bi bi-people"></i>
+                    <span><strong id="teamCount">0</strong> team members</span>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-dot" style="background: #EF4444;"></div>
+                    <span><strong id="onLeaveToday">0</strong> on leave today</span>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-dot" style="background: #F59E0B;"></div>
+                    <span><strong id="upcomingLeaves">0</strong> upcoming this week</span>
+                </div>
+            </div>
+            
+            <!-- Legend -->
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color leave-casual"></div>
+                    <span>Casual Leave</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color leave-sick"></div>
+                    <span>Sick Leave</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color leave-earned"></div>
+                    <span>Earned Leave</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color leave-comp"></div>
+                    <span>Comp Off</span>
+                </div>
+            </div>
+            
+            <!-- Calendar Grid -->
+            <div style="overflow-x: auto;">
+                <div class="calendar-grid" id="calendarGrid">
+                    <div class="text-center py-5 text-muted" style="grid-column: 1 / -1;">
+                        <div class="spinner-border text-primary"></div>
+                        <div class="mt-2">Loading calendar...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Leave Detail Modal -->
+    <div class="modal fade" id="leaveModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Leave Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="leaveDetails">
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Configuration
+        const API_BASE = 'http://localhost:5000/api/leave';
+        
+        let currentMonth = new Date();
+        let teamData = null;
+        
+        // Pusher for real-time updates
+        const pusher = new Pusher('b6c8ed8a35f95339f71c', { cluster: 'ap2' });
+        const hrChannel = pusher.subscribe('hr-dashboard');
+        
+        hrChannel.bind('leave-status-changed', function(data) {
+            loadCalendar();
+        });
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set default month
+            const monthPicker = document.getElementById('monthPicker');
+            monthPicker.value = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
+            
+            loadCalendar();
+        });
+        
+        // Load calendar data
+        async function loadCalendar() {
+            const managerId = document.getElementById('managerSelect').value;
+            const monthValue = document.getElementById('monthPicker').value;
+            
+            // Parse month
+            const [year, month] = monthValue.split('-');
+            const startDate = `${year}-${month}-01`;
+            const lastDay = new Date(year, month, 0).getDate();
+            const endDate = `${year}-${month}-${lastDay}`;
+            
+            try {
+                const response = await fetch(`${API_BASE}/team-calendar/${managerId}?start_date=${startDate}&end_date=${endDate}`);
+                teamData = await response.json();
+                
+                renderCalendar(year, month, teamData);
+                updateSummary(teamData);
+                
+            } catch (error) {
+                console.error('Calendar error:', error);
+                document.getElementById('calendarGrid').innerHTML = `
+                    <div class="text-center py-5 text-danger" style="grid-column: 1 / -1;">
+                        Error loading calendar data
+                    </div>
+                `;
+            }
+        }
+        
+        // Render calendar grid
+        function renderCalendar(year, month, data) {
+            const grid = document.getElementById('calendarGrid');
+            const daysInMonth = new Date(year, month, 0).getDate();
+            const today = new Date();
+            const todayStr = today.toISOString().split('T')[0];
+            
+            // Get days of week for first day
+            const firstDay = new Date(year, month - 1, 1).getDay();
+            
+            // Determine which days to show (7 days from start of week containing 1st)
+            const startOffset = firstDay;
+            
+            // Create header
+            let html = '<div class="calendar-header-row">';
+            html += '<div class="calendar-header-cell name-col">Team Member</div>';
+            
+            // Day headers
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            for (let d = 1; d <= Math.min(daysInMonth, 14); d++) {
+                const date = new Date(year, month - 1, d);
+                const dayName = dayNames[date.getDay()];
+                const isToday = `${year}-${month.padStart(2, '0')}-${String(d).padStart(2, '0')}` === todayStr;
+                const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                
+                html += `<div class="calendar-header-cell ${isToday ? 'today-column' : ''} ${isWeekend ? 'weekend' : ''}">
+                    ${dayName}<br><strong>${d}</strong>
+                </div>`;
+            }
+            html += '</div>';
+            
+            // Team members
+            if (!data.team_members || data.team_members.length === 0) {
+                html += '<div class="no-leaves" style="grid-column: 1 / -1;">No team members found</div>';
+            } else {
+                data.team_members.forEach(member => {
+                    html += '<div class="calendar-row">';
+                    
+                    // Name cell
+                    const initials = member.full_name.split(' ').map(n => n[0]).join('').substring(0, 2);
+                    html += `
+                        <div class="calendar-cell name-cell">
+                            <div class="employee-avatar">${initials}</div>
+                            <div>
+                                <div class="employee-name">${member.full_name}</div>
+                                <div class="employee-position">${member.position}</div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Day cells
+                    for (let d = 1; d <= Math.min(daysInMonth, 14); d++) {
+                        const dateStr = `${year}-${month.padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                        const isToday = dateStr === todayStr;
+                        const date = new Date(year, month - 1, d);
+                        const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+                        
+                        // Check if employee has leave on this day
+                        const leave = findLeaveForDay(data.leaves, member.emp_id, dateStr);
+                        
+                        let cellContent = '';
+                        if (leave) {
+                            const leaveClass = getLeaveClass(leave.leave_type);
+                            const position = getLeavePosition(leave, dateStr);
+                            cellContent = `
+                                <div class="leave-block ${leaveClass} ${position}" 
+                                     onclick="showLeaveDetails('${leave.request_id}')"
+                                     title="${leave.leave_type.replace(/_/g, ' ')}">
+                                    ${position === 'leave-start' || position === 'leave-single' ? leave.leave_type.charAt(0).toUpperCase() : ''}
+                                </div>
+                            `;
+                        }
+                        
+                        html += `<div class="calendar-cell ${isToday ? 'today-column' : ''} ${isWeekend ? 'weekend' : ''}">${cellContent}</div>`;
+                    }
+                    
+                    html += '</div>';
+                });
+            }
+            
+            grid.innerHTML = html;
+            
+            // Update grid template columns
+            grid.style.gridTemplateColumns = `200px repeat(${Math.min(daysInMonth, 14)}, 1fr)`;
+        }
+        
+        // Find leave for a specific day
+        function findLeaveForDay(leaves, empId, dateStr) {
+            if (!leaves) return null;
+            
+            return leaves.find(l => {
+                if (l.emp_id !== empId) return false;
+                const start = new Date(l.start_date).toISOString().split('T')[0];
+                const end = new Date(l.end_date).toISOString().split('T')[0];
+                return dateStr >= start && dateStr <= end;
+            });
+        }
+        
+        // Get leave CSS class
+        function getLeaveClass(leaveType) {
+            const classes = {
+                'casual_leave': 'leave-casual',
+                'sick_leave': 'leave-sick',
+                'earned_leave': 'leave-earned',
+                'comp_off': 'leave-comp'
+            };
+            return classes[leaveType] || 'leave-casual';
+        }
+        
+        // Get leave block position (start, middle, end, single)
+        function getLeavePosition(leave, dateStr) {
+            const start = new Date(leave.start_date).toISOString().split('T')[0];
+            const end = new Date(leave.end_date).toISOString().split('T')[0];
+            
+            if (start === end) return 'leave-single';
+            if (dateStr === start) return 'leave-start';
+            if (dateStr === end) return 'leave-end';
+            return 'leave-middle';
+        }
+        
+        // Update summary stats
+        function updateSummary(data) {
+            document.getElementById('teamCount').textContent = data.team_members?.length || 0;
+            
+            const today = new Date().toISOString().split('T')[0];
+            const onLeaveToday = data.leaves?.filter(l => {
+                const start = new Date(l.start_date).toISOString().split('T')[0];
+                const end = new Date(l.end_date).toISOString().split('T')[0];
+                return today >= start && today <= end;
+            }).length || 0;
+            
+            document.getElementById('onLeaveToday').textContent = onLeaveToday;
+            
+            // Upcoming this week
+            const nextWeek = new Date();
+            nextWeek.setDate(nextWeek.getDate() + 7);
+            const upcoming = data.leaves?.filter(l => {
+                const start = new Date(l.start_date);
+                return start > new Date() && start <= nextWeek;
+            }).length || 0;
+            
+            document.getElementById('upcomingLeaves').textContent = upcoming;
+        }
+        
+        // Show leave details
+        function showLeaveDetails(requestId) {
+            const leave = teamData.leaves.find(l => l.request_id === requestId);
+            if (!leave) return;
+            
+            const startDate = new Date(leave.start_date).toLocaleDateString();
+            const endDate = new Date(leave.end_date).toLocaleDateString();
+            
+            document.getElementById('leaveDetails').innerHTML = `
+                <p><strong>Employee:</strong> ${leave.full_name}</p>
+                <p><strong>Type:</strong> ${leave.leave_type.replace(/_/g, ' ')}</p>
+                <p><strong>Duration:</strong> ${startDate} - ${endDate}</p>
+                <p><strong>Days:</strong> ${leave.total_days}</p>
+                <p><strong>Department:</strong> ${leave.department}</p>
+            `;
+            
+            new bootstrap.Modal(document.getElementById('leaveModal')).show();
+        }
+        
+        // Refresh
+        function refreshCalendar() {
+            loadCalendar();
+        }
+    </script>
+</body>
+</html>
