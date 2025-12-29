@@ -903,12 +903,12 @@ def validate_quick():
 
 if __name__ == '__main__':
     print("\n" + "="*60)
-    print("🚀 CONSTRAINT SATISFACTION ENGINE")
+    print("[*] CONSTRAINT SATISFACTION ENGINE")
     print("="*60)
-    print(f"📋 Total Rules: {len(CONSTRAINT_RULES)}")
-    print("📊 Rules loaded:")
+    print(f"[*] Total Rules: {len(CONSTRAINT_RULES)}")
+    print("[*] Rules loaded:")
     for rule_id, rule in CONSTRAINT_RULES.items():
-        print(f"   • {rule_id}: {rule['name']}")
+        print(f"   - {rule_id}: {rule['name']}")
     print("="*60 + "\n")
     
     app.run(host='0.0.0.0', port=8001, debug=False)
