@@ -24,3 +24,7 @@ engine.log
 __pycache__/
 *.pyc
 .venv/
+
+# Test coverage
+coverage/
+backend/coverage/
