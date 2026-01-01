@@ -1,8 +1,8 @@
 const express = require('express');
+require('dotenv').config();
 const cors = require('cors');
 const path = require('path');
 const db = require('./src/config/db');
-require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -78,7 +78,7 @@ app.get('/api/health', async (req, res) => {
     try {
         // Check database connection
         await db.execute('SELECT 1');
-        
+
         // Check AI services
         const services = {
             leave: { port: 8001, status: 'unknown' },
@@ -86,7 +86,7 @@ app.get('/api/health', async (req, res) => {
             enterprise: { port: 8003, status: 'unknown' },
             recruitment: { port: 8004, status: 'unknown' }
         };
-        
+
         const axios = require('axios');
         for (const [name, info] of Object.entries(services)) {
             try {
@@ -96,18 +96,18 @@ app.get('/api/health', async (req, res) => {
                 services[name].status = 'offline';
             }
         }
-        
-        res.json({ 
-            status: 'healthy', 
+
+        res.json({
+            status: 'healthy',
             database: 'connected',
             aiServices: services,
             timestamp: new Date().toISOString()
         });
     } catch (error) {
-        res.status(500).json({ 
-            status: 'unhealthy', 
+        res.status(500).json({
+            status: 'unhealthy',
             database: 'disconnected',
-            error: error.message 
+            error: error.message
         });
     }
 });
@@ -123,16 +123,16 @@ app.get('/api/dashboard/stats', async (req, res) => {
             FROM leave_requests WHERE MONTH(created_at) = MONTH(NOW())
         `);
         const leaveStats = leaveResult[0] || { total_requests: 0, pending: 0, approved: 0 };
-        
+
         const empResult = await db.execute(`SELECT COUNT(*) as count FROM employees`);
         const employeeCount = empResult[0] || { count: 0 };
-        
+
         const onbResult = await db.execute(`
             SELECT COUNT(*) as active_onboarding 
             FROM employee_onboarding_new WHERE status = 'in_progress'
         `);
         const onboardingStats = onbResult[0] || { active_onboarding: 0 };
-        
+
         const recResult = await db.execute(`
             SELECT 
                 COUNT(*) as open_positions,
@@ -140,7 +140,7 @@ app.get('/api/dashboard/stats', async (req, res) => {
             FROM job_postings WHERE status = 'open'
         `);
         const recruitmentStats = recResult[0] || { open_positions: 0, new_applicants: 0 };
-        
+
         res.json({
             success: true,
             stats: {
@@ -152,8 +152,8 @@ app.get('/api/dashboard/stats', async (req, res) => {
         });
     } catch (error) {
         console.error('Dashboard stats error:', error.message);
-        res.json({ 
-            success: true, 
+        res.json({
+            success: true,
             stats: {
                 employees: 0,
                 leaveRequests: { total_requests: 0, pending: 0, approved: 0 },
