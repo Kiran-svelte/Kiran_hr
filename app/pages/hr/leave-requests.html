@@ -1307,7 +1307,7 @@
         }
 
         // New function to open document review modal
-        function reviewDocuments(requestId) {
+        async function reviewDocuments(requestId) {
             currentReviewId = requestId;
             const modal = document.getElementById('documentReviewModal');
             const list = document.getElementById('documentList');
@@ -1323,28 +1323,18 @@
                 modal.classList.add('show');
             }, 10);
 
-            // Simulate fetching documents (in a real app, you would fetch from API)
-            // Here we show standard documents based on leave type
-            const leave = allLeaves.find(l => l.request_id === requestId);
-
-            setTimeout(() => {
-                let docs = [];
-
-                // ALWAYS simulated docs for demo purposes
-                docs.push(
-                    { name: 'Employment Contract.pdf', type: 'Contract', date: '2024-01-15' },
-                    { name: 'Leave Policy Acknowledgement.pdf', type: 'Policy', date: '2024-01-15' }
-                );
-
-                if (leave && (leave.leave_type === 'Sick Leave' || leave.leave_type === 'sick_leave')) {
-                    docs.push({ name: 'Medical_Certificate_Jan2026.jpg', type: 'Medical', date: '2026-01-01' });
-                }
+            try {
+                // Securely fetch documents from backend (RLS Enforced)
+                const response = await API.get(`/leaves/requests/${requestId}/documents`);
+                const docs = response.documents || [];
+                const audit = response.security_audit;
 
                 if (docs.length === 0) {
                     list.innerHTML = `
                         <div class="empty-state" style="opacity: 1; padding: 20px;">
                             <p style="color: rgba(255,255,255,0.5);">No specific documents attached to this request.</p>
                             <p style="color: rgba(255,255,255,0.3); font-size: 0.8rem;">Standard employment records are on file.</p>
+                            ${audit ? `<div style="margin-top:10px; font-size:0.7rem; color:#10b981;">🔒 Access Logged: ${audit.access_type}</div>` : ''}
                         </div>
                      `;
                 } else {
@@ -1355,11 +1345,27 @@
                                 <div class="notification-title">${doc.name}</div>
                                 <div class="notification-message">${doc.type} • Uploaded ${doc.date}</div>
                             </div>
-                            <button class="btn-secondary" style="padding: 4px 12px; font-size: 0.8rem;" onclick="UI.showToast('Opening document...', 'info')">View</button>
+                            <button class="btn-secondary" style="padding: 4px 12px; font-size: 0.8rem;" onclick="UI.showToast('Opening secure document...', 'info')">View</button>
                         </div>
                     `).join('');
+
+                    if (audit) {
+                        list.innerHTML += `<div style="padding: 10px; text-align: right; font-size: 0.7rem; color: #6b7280; border-top: 1px solid rgba(255,255,255,0.1);">
+                            🔒 Security Verification: ${audit.access_type} Access by ${audit.accessed_by}
+                        </div>`;
+                    }
                 }
-            }, 800);
+            } catch (error) {
+                console.error('Document fetch error:', error);
+                list.innerHTML = `
+                    <div class="empty-state" style="opacity: 1; padding: 20px;">
+                        <div class="empty-icon" style="width: 40px; height: 40px; margin-bottom: 10px;"><i data-lucide="lock" style="color: #ef4444;"></i></div>
+                        <p style="color: #ef4444;">Access Denied</p>
+                        <p style="color: rgba(255,255,255,0.5); font-size: 0.8rem;">You do not have permission to view these documents.</p>
+                    </div>
+                `;
+                lucide.createIcons();
+            }
         }
 
         function closeDocumentModal() {

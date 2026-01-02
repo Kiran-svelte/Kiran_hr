@@ -390,3 +390,75 @@ exports.getMyLeaves = async (req, res) => {
         res.status(500).json({ message: 'Failed to fetch leave requests', error: error.message });
     }
 };
+
+exports.getLeaveDocuments = async (req, res) => {
+    try {
+        const { requestId } = req.params;
+        const currentUser = req.user;
+
+        // 1. Fetch the leave request to identify the owner
+        const [leaves] = await db.execute('SELECT emp_id, leave_type, created_at FROM leave_requests WHERE request_id = ?', [requestId]);
+
+        if (!leaves || leaves.length === 0) {
+            return res.status(404).json({ success: false, error: 'Leave request not found' });
+        }
+
+        const leaveRequest = leaves[0];
+        const isOwner = currentUser.emp_id === leaveRequest.emp_id;
+        const isHrOrAdmin = ['hr', 'admin'].includes(currentUser.role);
+
+        // 2. RLS: Security Check
+        if (!isOwner && !isHrOrAdmin) {
+            return res.status(403).json({
+                success: false,
+                error: 'Access Denied: You do not have permission to view these documents.'
+            });
+        }
+
+        // 3. Simulate fetching documents (Safe simulation)
+        // In a real scenario, this would query a 'leave_documents' table or 'employee_documents'
+        const documents = [
+            {
+                id: 'DOC_CONTRACT',
+                name: 'Employment Contract.pdf',
+                type: 'Contract',
+                date: '2024-01-15',
+                url: '#' // Secure signed URL would go here
+            },
+            {
+                id: 'DOC_POLICY',
+                name: 'Leave Policy Acknowledgement.pdf',
+                type: 'Policy',
+                date: '2024-01-15',
+                url: '#'
+            }
+        ];
+
+        // Conditional documents based on leave type
+        if (leaveRequest.leave_type.toLowerCase().includes('sick')) {
+            documents.push({
+                id: 'DOC_MED',
+                name: `Medical_Certificate_${new Date().getFullYear()}.jpg`,
+                type: 'Medical',
+                date: new Date(leaveRequest.created_at).toISOString().split('T')[0],
+                url: '#'
+            });
+        }
+
+        console.log(`[Security] Documents accessed for Request ${requestId} by ${currentUser.emp_id} (${currentUser.role})`);
+
+        res.json({
+            success: true,
+            documents: documents,
+            security_audit: {
+                accessed_by: currentUser.emp_id,
+                access_type: isOwner ? 'OWNER' : 'ADMIN_OVERRIDE',
+                timestamp: new Date().toISOString()
+            }
+        });
+
+    } catch (error) {
+        console.error('Error fetching leave documents:', error);
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+};

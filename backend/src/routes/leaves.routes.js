@@ -57,6 +57,9 @@ router.get('/balance/:empId', authenticateToken, async (req, res) => {
     }
 });
 
+// Secure Document Access (RLS Enforced)
+router.get('/requests/:requestId/documents', authenticateToken, leavesController.getLeaveDocuments);
+
 // Get pending requests (for HR/Manager panel)
 router.get('/pending', authenticateToken, async (req, res) => {
     // RLS: Only HR/Admin/Manager can view pending requests
