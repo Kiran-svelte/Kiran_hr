@@ -42,15 +42,6 @@ export default function EmployeesPage() {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {/* Add New Employee Card Placeholder */}
-                    <div className="glass-panel border-dashed border-slate-700 flex flex-col items-center justify-center p-8 group cursor-pointer hover:border-cyan-500/50 hover:bg-slate-800/30 transition-all">
-                        <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mb-4 group-hover:bg-cyan-900/30 transition-colors">
-                            <span className="text-3xl text-cyan-400">+</span>
-                        </div>
-                        <h3 className="text-white font-bold mb-1">Add Employee</h3>
-                        <p className="text-slate-500 text-sm">Invite new team member</p>
-                    </div>
-
                     {employees.map((emp) => (
                         <div key={emp.emp_id} className="glass-panel p-6 hover:translate-y-[-2px] transition-transform duration-300">
                             <div className="flex items-start justify-between mb-4">
@@ -86,6 +77,15 @@ export default function EmployeesPage() {
                             </button>
                         </div>
                     ))}
+
+                    {/* Add New Employee Card */}
+                    <div className="glass-panel border-dashed border-slate-700 flex flex-col items-center justify-center p-8 group cursor-pointer hover:border-cyan-500/50 hover:bg-slate-800/30 transition-all">
+                        <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mb-4 group-hover:bg-cyan-900/30 transition-colors">
+                            <span className="text-3xl text-cyan-400">+</span>
+                        </div>
+                        <h3 className="text-white font-bold mb-1">Add Employee</h3>
+                        <p className="text-slate-500 text-sm">Invite new team member</p>
+                    </div>
                 </div>
             )}
         </div>

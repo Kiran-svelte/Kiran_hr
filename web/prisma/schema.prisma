@@ -54,6 +54,13 @@ enum AIRecommendation {
   escalate
 }
 
+enum UserRole {
+  hr
+  employee
+  manager
+  admin
+}
+
 // 1. Organization Structure
 model OrganizationUnit {
   unit_id        Int               @id @default(autoincrement())
@@ -103,6 +110,7 @@ model Employee {
   level_code      String?   @default("L3")
   country_code    String?   @default("IN")
   gender          Gender?
+  role            UserRole  @default(employee)
   is_active       Boolean   @default(true)
 
   // Auth & Integrations
