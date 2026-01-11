@@ -16,7 +16,8 @@ export const metadata: Metadata = {
 };
 
 
-export default function RootLayout({
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -24,13 +25,12 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
-        <body
-          className={`${inter.variable} antialiased`}
-        >
+        <body className={`${inter.variable} antialiased bg-black text-white selection:bg-[#00f2ff] selection:text-black`}>
           {children}
         </body>
       </html>
     </ClerkProvider>
   );
 }
+
 
