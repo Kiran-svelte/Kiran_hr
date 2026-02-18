@@ -167,7 +167,7 @@ export async function submitAttestation(policyId: string) {
       select: { emp_id: true, org_id: true }
     });
 
-    if (!employee) {
+    if (!employee || !employee.org_id) {
       return { success: false, error: "Employee not found" };
     }
 
