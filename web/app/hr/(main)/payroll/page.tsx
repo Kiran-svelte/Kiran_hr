@@ -1,19 +1,32 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { getPayrollDashboard, runPayroll } from "@/app/actions/payroll";
 import { getCompanyEmployees } from "@/app/actions/hr";
+import StatCard from '@/components/ui/stat-card';
+import PageHeader from '@/components/ui/page-header';
+import { Wallet, DollarSign, Users, AlertCircle } from 'lucide-react';
 
 export default function PayrollPage() {
     const [employees, setEmployees] = useState<any[]>([]);
+    const [dashboard, setDashboard] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
 
     useEffect(() => {
         async function load() {
             try {
-                const res = await getCompanyEmployees();
-                if (res.success && res.employees) {
-                    setEmployees(res.employees);
+                const [empRes, dashRes] = await Promise.all([
+                    getCompanyEmployees(),
+                    getPayrollDashboard()
+                ]);
+                
+                if (empRes.success && empRes.employees) {
+                    setEmployees(empRes.employees);
+                }
+                
+                if (dashRes.success && dashRes.data) {
+                    setDashboard(dashRes.data);
                 }
             } catch (e) {
                 console.error(e);
@@ -24,6 +37,30 @@ export default function PayrollPage() {
         load();
     }, []);
 
+    const handleRunPayroll = async () => {
+        setProcessing(true);
+        try {
+            const currentMonth = new Date().getMonth() + 1;
+            const currentYear = new Date().getFullYear();
+            
+            const res = await runPayroll(currentMonth, currentYear);
+            
+            if (res.success) {
+                alert(`✅ Payroll processed successfully for ${res.count} employees`);
+                // Reload data
+                const dashRes = await getPayrollDashboard();
+                if (dashRes.success) setDashboard(dashRes.data);
+            } else {
+                alert(`❌ Error: ${res.error}`);
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Failed to process payroll');
+        } finally {
+            setProcessing(false);
+        }
+    };
+
     // Helper to format currency
     const formatMoney = (amount: number) => {
         return new Intl.NumberFormat('en-IN', {
@@ -33,38 +70,56 @@ export default function PayrollPage() {
         }).format(amount);
     };
 
-    const handleRunPayroll = () => {
-        setProcessing(true);
-        // Simulate processing
-        setTimeout(() => {
-            setProcessing(false);
-            alert("✅ Payroll processed successfully for " + new Date().toLocaleString('default', { month: 'long' }));
-        }, 2000);
-    };
-
     return (
         <div>
-            <header className="flex justify-between items-center mb-8">
-                <div>
-                    <h1 className="text-3xl font-bold text-white mb-2">Payroll Management</h1>
-                    <p className="text-slate-400">Process salaries and view payment history</p>
+            <PageHeader
+                title="Payroll Management"
+                description="Process salaries and view payment history"
+                actions={
+                    <button
+                        onClick={handleRunPayroll}
+                        disabled={processing}
+                        className="px-6 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold rounded-lg hover:shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all flex items-center gap-2 disabled:opacity-50"
+                    >
+                        {processing ? (
+                            <>
+                                <span className="animate-spin">⚙️</span> Processing...
+                            </>
+                        ) : (
+                            <>
+                                <span>⚡</span> Run {new Date().toLocaleString('default', { month: 'long' })} Payroll
+                            </>
+                        )}
+                    </button>
+                }
+            />
+
+            {/* Dashboard Stats */}
+            {dashboard && (
+                <div className="grid md:grid-cols-4 gap-6 mb-8">
+                    <StatCard
+                        title="Total Employees"
+                        value={dashboard.totalEmployees}
+                        icon={Users}
+                    />
+                    <StatCard
+                        title="Processed"
+                        value={dashboard.processedPayrolls}
+                        icon={DollarSign}
+                    />
+                    <StatCard
+                        title="Pending"
+                        value={dashboard.pendingPayrolls}
+                        icon={AlertCircle}
+                        highlight={dashboard.pendingPayrolls > 0}
+                    />
+                    <StatCard
+                        title="Total Cost"
+                        value={formatMoney(parseFloat(dashboard.totalPayrollCost || '0'))}
+                        icon={Wallet}
+                    />
                 </div>
-                <button
-                    onClick={handleRunPayroll}
-                    disabled={processing}
-                    className="px-6 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold rounded-lg hover:shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all flex items-center gap-2 disabled:opacity-50"
-                >
-                    {processing ? (
-                        <>
-                            <span className="animate-spin">⚙️</span> Processing...
-                        </>
-                    ) : (
-                        <>
-                            <span>⚡</span> Run {new Date().toLocaleString('default', { month: 'long' })} Payroll
-                        </>
-                    )}
-                </button>
-            </header>
+            )}
 
             {loading ? (
                 <div className="flex justify-center p-12">

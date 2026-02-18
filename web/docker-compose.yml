@@ -1,0 +1,106 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: kiran_hr_db
+    environment:
+      POSTGRES_USER: kiran_hr
+      POSTGRES_PASSWORD: kiran_hr_password
+      POSTGRES_DB: kiran_hr
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kiran_hr"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: kiran_hr_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Python AI Constraint Engine
+  ai_engine:
+    build:
+      context: ../backend/ai-services/leave-agent
+      dockerfile: Dockerfile
+    container_name: kiran_hr_ai_engine
+    ports:
+      - "8001:8001"
+    environment:
+      - FLASK_ENV=production
+      - DATABASE_URL=postgresql://kiran_hr:kiran_hr_password@postgres:5432/kiran_hr
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # Next.js Application
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kiran_hr_web
+    ports:
+      - "3000:3000"
+    environment:
+      # Clerk Auth
+      - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+      - CLERK_WEBHOOK_SECRET=${CLERK_WEBHOOK_SECRET}
+      
+      # Database
+      - DATABASE_URL=postgresql://kiran_hr:kiran_hr_password@postgres:5432/kiran_hr?schema=public
+      - DIRECT_URL=postgresql://kiran_hr:kiran_hr_password@postgres:5432/kiran_hr?schema=public
+      
+      # AI LLM Providers
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - GROQ_MODEL=llama-3.3-70b-versatile
+      - SAMBANOVA_API_KEY=${SAMBANOVA_API_KEY}
+      - SAMBANOVA_MODEL=Meta-Llama-3.1-8B-Instruct
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=gemini-pro
+      
+      # AI Services
+      - AI_SERVICE_URL=http://ai_engine:8001
+      - CONSTRAINT_ENGINE_URL=http://ai_engine:8001
+      
+      # Redis
+      - REDIS_URL=redis://redis:6379
+      
+      # App
+      - NEXT_PUBLIC_APP_URL=http://localhost:3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ai_engine:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  postgres_data:
+  redis_data:
