@@ -46,6 +46,9 @@ export async function POST(req: NextRequest) {
         const fullName = `${userData.first_name || ''} ${userData.last_name || ''}`.trim();
 
         if (email) {
+          // Generate a more robust employee ID using UUID
+          const empId = `EMP-${userData.id.substring(0, 8)}`;
+          
           await prisma.employee.upsert({
             where: { email },
             update: {
@@ -53,7 +56,7 @@ export async function POST(req: NextRequest) {
               full_name: fullName || email
             },
             create: {
-              emp_id: `EMP-${Date.now()}`,
+              emp_id: empId,
               clerk_id: userData.id,
               email,
               full_name: fullName || email,

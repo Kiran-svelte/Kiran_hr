@@ -127,6 +127,8 @@ function getCachedResponse(cacheKey: string): string | null {
 
 /**
  * Cache a response
+ * Note: Using Map which maintains insertion order for simple FIFO cache.
+ * For production, consider using a proper LRU cache library like 'lru-cache'.
  */
 function cacheResponse(cacheKey: string, response: string) {
   responseCache.set(cacheKey, {
@@ -134,7 +136,7 @@ function cacheResponse(cacheKey: string, response: string) {
     timestamp: Date.now()
   });
   
-  // Simple cache size management
+  // Simple FIFO cache size management (Map maintains insertion order)
   if (responseCache.size > 100) {
     const firstKey = responseCache.keys().next().value;
     if (firstKey) responseCache.delete(firstKey);

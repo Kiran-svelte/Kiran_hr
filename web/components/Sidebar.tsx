@@ -14,7 +14,9 @@ import {
     ShieldAlert,
     Building2,
     User,
-    Target
+    Target,
+    Briefcase,
+    FileBarChart
 } from "lucide-react";
 import { SignOutButton } from "@clerk/nextjs";
 
@@ -29,10 +31,10 @@ export default function Sidebar() {
         { href: "/hr/leave-requests", label: "Leave Requests", icon: FileText },
         { href: "/hr/payroll", label: "Payroll", icon: Wallet },
         { href: "/hr/onboarding", label: "Onboarding", icon: UserPlus },
-        { href: "/hr/performance", label: "Performance", icon: BarChart3 },
-        { href: "/hr/recruitment", label: "Recruitment", icon: Users },
+        { href: "/hr/performance", label: "Performance", icon: Target },
+        { href: "/hr/recruitment", label: "Recruitment", icon: Briefcase },
         { href: "/hr/compliance", label: "Compliance", icon: ShieldAlert },
-        { href: "/hr/reports", label: "Reports", icon: BarChart3 },
+        { href: "/hr/reports", label: "Reports", icon: FileBarChart },
         { href: "/hr/company", label: "Settings", icon: Building2 },
     ];
 

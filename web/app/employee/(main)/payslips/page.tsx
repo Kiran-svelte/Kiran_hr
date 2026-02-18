@@ -10,7 +10,11 @@ import { Wallet, Download } from 'lucide-react';
 export default function PayslipsPage() {
     const [payslips, setPayslips] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+    const currentYear = new Date().getFullYear();
+    const [selectedYear, setSelectedYear] = useState(currentYear);
+
+    // Generate year list dynamically (current year and 2 years back)
+    const availableYears = Array.from({ length: 3 }, (_, i) => currentYear - i);
 
     useEffect(() => {
         loadPayslips();
@@ -53,7 +57,7 @@ export default function PayslipsPage() {
                     onChange={(e) => setSelectedYear(parseInt(e.target.value))}
                     className="px-4 py-2 bg-slate-800 border border-white/10 rounded-lg text-white focus:outline-none focus:border-cyan-500"
                 >
-                    {[2024, 2023, 2022].map(year => (
+                    {availableYears.map(year => (
                         <option key={year} value={year}>{year}</option>
                     ))}
                 </select>

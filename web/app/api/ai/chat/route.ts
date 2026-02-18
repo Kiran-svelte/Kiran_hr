@@ -27,8 +27,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Return streaming response
-    return new NextResponse(stream, {
+    // Create a transform stream to handle errors during streaming
+    const transformStream = new TransformStream({
+      transform(chunk, controller) {
+        controller.enqueue(chunk);
+      },
+      flush(controller) {
+        controller.terminate();
+      }
+    });
+
+    // Return streaming response with error handling
+    return new NextResponse(stream.pipeThrough(transformStream), {
       headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
