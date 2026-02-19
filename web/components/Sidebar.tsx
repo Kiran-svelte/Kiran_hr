@@ -13,7 +13,11 @@ import {
     MessageSquare,
     ShieldAlert,
     Building2,
-    User
+    User,
+    Target,
+    Briefcase,
+    FileBarChart,
+    Settings
 } from "lucide-react";
 import { SignOutButton } from "@clerk/nextjs";
 
@@ -24,15 +28,22 @@ export default function Sidebar() {
 
     const hrLinks = [
         { href: "/hr/dashboard", label: "Dashboard", icon: LayoutDashboard },
-        { href: "/hr/company", label: "Profile", icon: Building2 },
-        { href: "/hr/leave-requests", label: "Leave Requests", icon: FileText },
         { href: "/hr/employees", label: "Employees", icon: Users },
+        { href: "/hr/leave-requests", label: "Leave Requests", icon: FileText },
         { href: "/hr/payroll", label: "Payroll", icon: Wallet },
-        { href: "/hr/policy-settings", label: "Leave Policy", icon: ShieldAlert },
+        { href: "/hr/onboarding", label: "Onboarding", icon: UserPlus },
+        { href: "/hr/performance", label: "Performance", icon: Target },
+        { href: "/hr/recruitment", label: "Recruitment", icon: Briefcase },
+        { href: "/hr/compliance", label: "Compliance", icon: ShieldAlert },
+        { href: "/hr/reports", label: "Reports", icon: FileBarChart },
+        { href: "/hr/settings", label: "Policy Settings", icon: Settings },
+        { href: "/hr/company", label: "Company", icon: Building2 },
     ];
 
     const empLinks = [
         { href: "/employee/dashboard", label: "Dashboard", icon: LayoutDashboard },
+        { href: "/employee/leave", label: "Leave", icon: FileText },
+        { href: "/employee/payslips", label: "Payslips", icon: Wallet },
         { href: "/employee/history", label: "My History", icon: BarChart3 },
         { href: "/employee/profile", label: "My Profile", icon: User },
     ];

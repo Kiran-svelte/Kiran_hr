@@ -61,6 +61,58 @@ enum UserRole {
   admin
 }
 
+enum OnboardingStatus {
+  not_started
+  in_progress
+  completed
+  on_hold
+}
+
+enum TaskStatus {
+  pending
+  in_progress
+  completed
+  blocked
+}
+
+enum ReviewStatus {
+  draft
+  submitted
+  in_review
+  completed
+  cancelled
+}
+
+enum GoalStatus {
+  active
+  on_track
+  at_risk
+  achieved
+  missed
+}
+
+enum CandidateStatus {
+  applied
+  screening
+  interview
+  offer
+  accepted
+  rejected
+  withdrawn
+}
+
+enum NotificationType {
+  leave_request
+  leave_approved
+  leave_rejected
+  payroll_processed
+  document_required
+  performance_review
+  goal_update
+  policy_update
+  general
+}
+
 // 1. Organization Structure
 model OrganizationUnit {
   unit_id        Int               @id @default(autoincrement())
@@ -319,4 +371,186 @@ model Document {
   employee Employee @relation(fields: [emp_id], references: [emp_id])
 
   @@map("documents")
+}
+
+// 14. Onboarding Plans
+model OnboardingPlan {
+  id          String           @id @default(uuid())
+  emp_id      String           @unique
+  org_id      String
+  status      OnboardingStatus @default(not_started)
+  start_date  DateTime         @default(now())
+  target_date DateTime?
+  progress    Int              @default(0) // Percentage 0-100
+  created_at  DateTime         @default(now())
+  updated_at  DateTime         @updatedAt
+
+  tasks OnboardingTask[]
+
+  @@map("onboarding_plans")
+}
+
+// 15. Onboarding Tasks
+model OnboardingTask {
+  id          String      @id @default(uuid())
+  plan_id     String
+  title       String
+  description String?     @db.Text
+  assigned_to String?     // emp_id of assignee (could be HR or buddy)
+  due_date    DateTime?
+  status      TaskStatus  @default(pending)
+  order       Int         @default(0)
+  completed_at DateTime?
+  created_at  DateTime    @default(now())
+
+  plan OnboardingPlan @relation(fields: [plan_id], references: [id], onDelete: Cascade)
+
+  @@map("onboarding_tasks")
+}
+
+// 16. Performance Reviews
+model PerformanceReview {
+  id               String       @id @default(uuid())
+  emp_id           String
+  org_id           String
+  reviewer_id      String       // Manager's emp_id
+  review_period    String       // e.g., "Q1 2024"
+  self_review      Json?
+  manager_review   Json?
+  peer_reviews     Json?        // Array of peer feedback
+  final_rating     Decimal?     @db.Decimal(3, 2) // e.g., 4.5 out of 5
+  status           ReviewStatus @default(draft)
+  submitted_at     DateTime?
+  completed_at     DateTime?
+  created_at       DateTime     @default(now())
+  updated_at       DateTime     @updatedAt
+
+  @@map("performance_reviews")
+}
+
+// 17. Performance Goals (OKRs)
+model PerformanceGoal {
+  id          String     @id @default(uuid())
+  emp_id      String
+  org_id      String
+  title       String
+  description String?    @db.Text
+  target      String?    // Target metric or outcome
+  progress    Int        @default(0) // Percentage 0-100
+  status      GoalStatus @default(active)
+  due_date    DateTime?
+  created_at  DateTime   @default(now())
+  updated_at  DateTime   @updatedAt
+
+  @@map("performance_goals")
+}
+
+// 18. Job Postings
+model JobPosting {
+  id                String    @id @default(uuid())
+  org_id            String
+  title             String
+  department        String?
+  location          String?
+  employment_type   String?   // Full-time, Part-time, Contract
+  description       String    @db.Text
+  requirements      String    @db.Text
+  ai_generated      Boolean   @default(false)
+  status            String    @default("active") // active, closed, draft
+  posted_date       DateTime  @default(now())
+  closing_date      DateTime?
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+
+  candidates Candidate[]
+
+  @@map("job_postings")
+}
+
+// 19. Candidates
+model Candidate {
+  id              String          @id @default(uuid())
+  job_id          String
+  full_name       String
+  email           String
+  phone           String?
+  resume_url      String?
+  cover_letter    String?         @db.Text
+  status          CandidateStatus @default(applied)
+  ai_score        Decimal?        @db.Decimal(5, 2) // 0-100
+  ai_analysis     Json?
+  notes           String?         @db.Text
+  applied_at      DateTime        @default(now())
+  last_updated_at DateTime        @updatedAt
+
+  job JobPosting @relation(fields: [job_id], references: [id], onDelete: Cascade)
+
+  @@map("candidates")
+}
+
+// 20. Compliance Policies
+model CompliancePolicy {
+  id              String   @id @default(uuid())
+  org_id          String
+  title           String
+  description     String   @db.Text
+  policy_document String?  @db.Text // Full policy text
+  ai_parsed_rules Json?    // AI-extracted key rules
+  version         String   @default("1.0")
+  effective_date  DateTime @default(now())
+  is_active       Boolean  @default(true)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  attestations ComplianceAttestation[]
+
+  @@map("compliance_policies")
+}
+
+// 21. Compliance Attestations
+model ComplianceAttestation {
+  id               String   @id @default(uuid())
+  policy_id        String
+  emp_id           String
+  acknowledged_at  DateTime @default(now())
+  ip_address       String?
+  user_agent       String?
+
+  policy CompliancePolicy @relation(fields: [policy_id], references: [id], onDelete: Cascade)
+
+  @@unique([policy_id, emp_id])
+  @@map("compliance_attestations")
+}
+
+// 22. Notifications
+model Notification {
+  id         String           @id @default(uuid())
+  emp_id     String           // Recipient
+  org_id     String
+  type       NotificationType
+  title      String
+  message    String           @db.Text
+  link       String?          // Optional deep link
+  read       Boolean          @default(false)
+  created_at DateTime         @default(now())
+
+  @@index([emp_id, read])
+  @@map("notifications")
+}
+
+// 23. AI Interaction Logs
+model AIInteractionLog {
+  id          String   @id @default(uuid())
+  emp_id      String
+  org_id      String
+  module      String   // e.g., "leave", "payroll", "chatbot"
+  prompt      String   @db.Text
+  response    String   @db.Text
+  model_used  String?  // Which LLM was used
+  tokens      Int?
+  latency_ms  Int?
+  created_at  DateTime @default(now())
+
+  @@index([org_id, module])
+  @@map("ai_interaction_logs")
 }
