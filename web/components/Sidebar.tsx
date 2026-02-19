@@ -16,7 +16,8 @@ import {
     User,
     Target,
     Briefcase,
-    FileBarChart
+    FileBarChart,
+    Settings
 } from "lucide-react";
 import { SignOutButton } from "@clerk/nextjs";
 
@@ -35,7 +36,8 @@ export default function Sidebar() {
         { href: "/hr/recruitment", label: "Recruitment", icon: Briefcase },
         { href: "/hr/compliance", label: "Compliance", icon: ShieldAlert },
         { href: "/hr/reports", label: "Reports", icon: FileBarChart },
-        { href: "/hr/company", label: "Settings", icon: Building2 },
+        { href: "/hr/settings", label: "Policy Settings", icon: Settings },
+        { href: "/hr/company", label: "Company", icon: Building2 },
     ];
 
     const empLinks = [
